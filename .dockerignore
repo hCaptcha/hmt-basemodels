@@ -1,0 +1,13 @@
+build/
+build/**
+venv
+venv*
+src
+src/**
+.mypy_cache/
+.mypy_cache/**
+.git
+.git/**
+.vscode
+.vscode/**
+docker-compose
