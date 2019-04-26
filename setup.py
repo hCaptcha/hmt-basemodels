@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="hmt-basemodels",
-    version="0.0.1",
+    version="0.0.2",
     author="HUMAN Protocol",
     description="Basemodels for manifest data used by hmt-escrow",
     url="https://github.com/hCaptcha/hmt-basemodels",
