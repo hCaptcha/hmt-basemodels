@@ -3,6 +3,11 @@ from schematics.models import Model, ValidationError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
     UUIDType, ModelType, BooleanType
 
+class VerficationData(Model):
+    """ objects within taskdata list in Manifest """
+    task_key = UUIDType(required=True)
+    datapoint_uri = URLType(required=True, min_length=10)
+    datapoint_hash = StringType(required=True, min_length=10)
 
 class TaskData(Model):
     """ objects within taskdata list in Manifest """
@@ -86,8 +91,11 @@ class Manifest(Model):
 
     request_config = ModelType(RequestConfig, required=False)
 
+    verifications = ListType(ModelType(TaskData))
+
+    
     # If taskdata is directly provided
-    taskdata = ListType(ModelType(TaskData))
+    verification_data = ListType(ModelType(VerficationData))
 
     # If taskdata is separately stored
     taskdata_uri = URLType()
