@@ -4,7 +4,7 @@ from schematics.types import StringType, DecimalType, BooleanType, IntType, Dict
     UUIDType, ModelType, BooleanType
 
 class VerficationData(Model):
-    """ objects within taskdata list in Manifest """
+    """ objects within verification data list in Manifest """
     task_key = UUIDType(required=True)
     datapoint_uri = URLType(required=True, min_length=10)
     datapoint_hash = StringType(required=True, min_length=10)
