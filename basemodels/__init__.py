@@ -91,9 +91,6 @@ class Manifest(Model):
 
     request_config = ModelType(RequestConfig, required=False)
 
-    verifications = ListType(ModelType(TaskData))
-
-    
     # If taskdata is directly provided
     verification_data = ListType(ModelType(VerficationData))
 
