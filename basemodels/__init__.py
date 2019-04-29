@@ -87,6 +87,9 @@ class Manifest(Model):
     request_config = ModelType(RequestConfig, required=False)
 
     # If taskdata is directly provided
+    validation_data = ListType(ModelType(TaskData))
+    
+    # If taskdata is directly provided
     taskdata = ListType(ModelType(TaskData))
 
     # If taskdata is separately stored
