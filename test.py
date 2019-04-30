@@ -126,15 +126,6 @@ class ManifestTest(unittest.TestCase):
         self.assertGreater(
             len(manifest['requester_restricted_answer_set'].keys()), 0)
 
-    def test_experimental_dict_string(self):
-        """ Test that manifest contains experimental dict """
-        experimental_dict = {"test_key": 10, "test_key2": "asd"}
-        model = a_manifest()
-        model.experimental = experimental_dict
-        manifest = basemodels.Manifest(model)
-        manifest.validate()
-        self.assertListEqual(list(experimental_dict.keys()), list(manifest.experimental.keys()))
-
 
 if __name__ == "__main__":
     logging.basicConfig()

@@ -92,9 +92,6 @@ class Manifest(Model):
     # If taskdata is separately stored
     taskdata_uri = URLType()
 
-    # Dict for experiment related attributes
-    experimental = DictType(StringType, required=False)
-
     def validate_taskdata_uri(self, data, value):
         if data.get('taskdata') and len(
                 data.get('taskdata')) > 0 and data.get('taskdata_uri'):
