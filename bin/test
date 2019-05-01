@@ -1,4 +1,4 @@
 #!/bin/sh
 set -exu
-docker-compose build
-docker-compose run basemodels 
+
+python3 test.py
