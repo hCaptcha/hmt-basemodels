@@ -12,14 +12,14 @@ script:
 
 deploy:
   provider: pypi
-  user: rbval
+  user: dev-im
   # This edge argument is intended to work around issue:
   # https://github.com/travis-ci/dpl/pull/834#issuecomment-434036325
   edge:
     source: ssbarnea/dpl
     branch: master
   password:
-    secure: nzfKAbu23npmH6k8UaFbL0+KoiAULm3vzv0hpr6Zsk8OjvMmzu29e50sNNj63BAj9p8ljdE7BHdrs1Z2tKJDpDCyIhxXESKQSOzQO/M0Xrr3+SImfYhNrfBnVKIMDslunMq5fp6eN0UvfmNQwO2Xdsn1ZLjiV0UXuWN5/2MAeVxuxfNXGbKloVe4ddyXCzVgZeuSgjZyqDWZiNtye/+41UrYX0FxgSHd0w/O8zOkc+b+Tiq/MDU1nIzOEA/Trgnhqa5bNikIq1KmT88vx8v/NMJ9vHfxB4J2WNNFXB0w5kJ9i+tE2YNgHebBZXhNPpSIzX8qLfw1ZHxgFV3XPhMTp6rrhax9faAOKMNzX9U1WbnSRYfu9TN9qflcfTq9zntfS8wrM0rZmwyIH6sjMqjBjnYDIV4iYT3g59wz0WWrs5U2fEQyCWgv7tz6xF/pGqojhWxUkWd7nTos6hNxLLp1UpzwrcPOMavfIZREDtPyJcR23nnR0S9lM3xUXc7fNLuhRQzIxblGRug30Q3KPVC31CHa2CFlmnoX1vQX35sZXFKL9HISkFFDLd9TMc+sISkdF8cz64/DksH6LPmGG5aVlPDKcswxFAqkAYiZW1t+WvV1TVGkSA1fIVMyULzaKm/3qi4L5gMKjHqHTZoVcZwhZBPIMGjXjgjB/Zlrple4teQ=
+    secure: "EfaHObFKrJ0Kodj0hbPS4k46IDcXaeXmxgM6anmRK2Zt6cqo/SWNVFE1YjnEvcb4X8uo8NKv+50aF5ETiqksUACO07QTkpKM1x5PtH37T9CP8K9SvffjZmNprTSKJ2eAq7Ay8+YUk5CFJc4sHBd3LiuV+mZk95/DHjuQps5OqslrZSfewd37XxzUYE/OFvBK7gLcIoZ6X7tLC+a+IYe1Ce2XxRAKTH0Vtd/pFlgKIHJ5tP52Zl/mSU5FMJVK/RVjQLHhbdVgckaiQbB8Ic01JfyIfbNeioOB+D1bcSC6LMp8bJRliC0mwtQV1nN7XS1cy7lLT/RHJJGEx3uBG98BqtpsABbR3Q789rv6fQH8rmi+ExPEERiTxZE+d4Ht42SfcLB96iXIrNMo1EGGpuVEc8MiPVMx3hBMhR2lMo4oavHaCFxsfv8shhTiqHdJ7zAJe+4oPmCTCEBebVnL+2xJQhJOVLF/OTEUDmIRha41nbxUHdl4zdtGKOrKNwXR19HoZIM7lN/K9+dySPqB4i25ksHEBS8u1CUemLWh1VeQqZH3cFPI2OxTcwF/OER+VNR/PHo5Nu3m8KtvYjt9dsuUAum08vWcUBmIdvPOzI81N11D2J2xuA0Yua4knj3DviV9TAwM+cSwxm+5toM6RdWEQhkt0gLSCPHitVWu4HoSqyo="
   on:
     tags: true
 
