@@ -1,5 +1,4 @@
 version: '2'
 services:
   basemodels:
-    command: sh -c 'python3 test.py'
     build: .
