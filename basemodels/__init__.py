@@ -1,7 +1,7 @@
 import uuid
 from schematics.models import Model, ValidationError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
-    UUIDType, ModelType, BooleanType
+    UUIDType, ModelType, BooleanType, UnionType
 
 
 class TaskData(Model):
@@ -46,7 +46,13 @@ class Manifest(Model):
     requester_max_repeats = IntType(default=100)
     requester_min_repeats = IntType(default=1)
     requester_question = DictType(StringType)
-    requester_question_example = URLType()
+
+    requester_question_example = UnionType((URLType, ListType), field=URLType)
+    def validate_requester_question_example(self, data, value):
+        if data['request_type'] != 'image_label_binary' and isinstance(value, list):
+            raise ValidationError("Lists are not allowed in this challenge type")
+        return value
+
     unsafe_content = BooleanType(default=False)
     task_bid_price = DecimalType(required=True)
     oracle_stake = DecimalType(required=True)
