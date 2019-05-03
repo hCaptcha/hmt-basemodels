@@ -86,7 +86,6 @@ class Manifest(Model):
 
     request_config = ModelType(RequestConfig, required=False)
 
-    # If taskdata is directly provided
     validation_data = ListType(ModelType(TaskData))
     
     # If taskdata is directly provided
@@ -97,6 +96,8 @@ class Manifest(Model):
 
     # Dict for experiment related attributes
     experimental = DictType(StringType, required=False)
+    # If taskdata is directly provided
+90
 
     def validate_taskdata_uri(self, data, value):
         if data.get('taskdata') and len(
