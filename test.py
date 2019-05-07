@@ -132,6 +132,27 @@ class ManifestTest(unittest.TestCase):
         manifest.confcalc_configuration_id = 'test_conf_id'
         manifest.validate()
 
+    def test_url_or_list_for_example(self):
+        """ validates that we can supply a list or a url to example key if ILB """
+        model = a_manifest()
+
+        model.requester_question_example = "https://test.com"
+        self.assertTrue(model.validate() is None)
+        self.assertIsInstance(model.to_primitive()['requester_question_example'], str)
+
+        model.requester_question_example = ["https://test.com"]
+        self.assertTrue(model.validate() is None)
+        self.assertIsInstance(model.to_primitive()['requester_question_example'], list)
+
+        model.requester_question_example = "non-url"
+        self.assertRaises(schematics.exceptions.DataError, model.validate)
+        model.requester_question_example = ["non-url"]
+        self.assertRaises(schematics.exceptions.DataError, model.validate)
+
+        # dont allow lists in non-ilb types
+        model.request_type = "image_label_area_select"
+        self.assertRaises(schematics.exceptions.DataError, model.validate)
+
 
 if __name__ == "__main__":
     logging.basicConfig()
