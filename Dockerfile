@@ -16,4 +16,4 @@ COPY test.py /work/
 COPY basemodels /work/basemodels/
 COPY bin /work/bin/
 
-CMD ["python", "test.py"]
+CMD sh

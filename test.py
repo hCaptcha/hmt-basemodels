@@ -126,7 +126,6 @@ class ManifestTest(unittest.TestCase):
         self.assertGreater(
             len(manifest['requester_restricted_answer_set'].keys()), 0)
 
-
 if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger("urllib3").setLevel(logging.INFO)
