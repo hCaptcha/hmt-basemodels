@@ -126,6 +126,13 @@ class ManifestTest(unittest.TestCase):
         self.assertGreater(
             len(manifest['requester_restricted_answer_set'].keys()), 0)
 
+    def test_confcalc_configuration_id(self):
+        """ Test that key is in manifest """
+        manifest = a_manifest()
+        manifest.confcalc_configuration_id = 'test_conf_id'
+        manifest.validate()
+
+
 if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger("urllib3").setLevel(logging.INFO)
