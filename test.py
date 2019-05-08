@@ -126,14 +126,11 @@ class ManifestTest(unittest.TestCase):
         self.assertGreater(
             len(manifest['requester_restricted_answer_set'].keys()), 0)
 
-    def test_experimental_dict_string(self):
-        """ Test that manifest contains experimental dict """
-        experimental_dict = {"test_key": 10, "test_key2": "asd"}
-        model = a_manifest()
-        model.experimental = experimental_dict
-        manifest = basemodels.Manifest(model)
+    def test_confcalc_configuration_id(self):
+        """ Test that key is in manifest """
+        manifest = a_manifest()
+        manifest.confcalc_configuration_id = 'test_conf_id'
         manifest.validate()
-        self.assertListEqual(list(experimental_dict.keys()), list(manifest.experimental.keys()))
 
     def test_url_or_list_for_example(self):
         """ validates that we can supply a list or a url to example key if ILB """
@@ -155,7 +152,6 @@ class ManifestTest(unittest.TestCase):
         # dont allow lists in non-ilb types
         model.request_type = "image_label_area_select"
         self.assertRaises(schematics.exceptions.DataError, model.validate)
-
 
 
 if __name__ == "__main__":
