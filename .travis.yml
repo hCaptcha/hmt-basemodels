@@ -8,10 +8,7 @@ services:
 
 # added per Travis support guidance to fix network build issues
 before_install:
-  - |
-    sudo tee /etc/resolvconf/resolv.conf.d/tail <<EOF
-    options attempts:5
-    EOF
+  - echo 'options attempts:5' | sudo tee -a /etc/resolvconf/resolv.conf.d/tail
   - sudo service resolvconf restart
 
 script:
