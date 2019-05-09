@@ -6,14 +6,6 @@ python:
 services:
 - docker
 
-# added per Travis support guidance to fix network build issues
-before_install:
-  - |
-    sudo tee /etc/resolvconf/resolv.conf.d/tail <<EOF
-    options attempts:5
-    EOF
-  - sudo service resolvconf restart
-
 script:
 - "./bin/ci"
 
