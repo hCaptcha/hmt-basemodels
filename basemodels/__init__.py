@@ -96,7 +96,7 @@ class Manifest(Model):
     taskdata = ListType(ModelType(TaskData))
     
     # Validation is separately stored
-    gt = URLType()
+    groundtruth_uri = URLType()
     
     # If taskdata is separately stored
     taskdata_uri = URLType()
