@@ -98,6 +98,9 @@ class Manifest(Model):
     # If taskdata is separately stored
     taskdata_uri = URLType()
 
+    # Groundtruth data is stored only as a URL
+    groundtruth_uri = URLType()
+
     # Configuration id
     confcalc_configuration_id = StringType(required=False)
 
