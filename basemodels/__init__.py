@@ -48,9 +48,12 @@ class Manifest(Model):
     requester_question = DictType(StringType)
 
     requester_question_example = UnionType((URLType, ListType), field=URLType)
+
     def validate_requester_question_example(self, data, value):
-        if data['request_type'] != 'image_label_binary' and isinstance(value, list):
-            raise ValidationError("Lists are not allowed in this challenge type")
+        if data['request_type'] != 'image_label_binary' and isinstance(
+                value, list):
+            raise ValidationError(
+                "Lists are not allowed in this challenge type")
         return value
 
     unsafe_content = BooleanType(default=False)
@@ -98,8 +101,15 @@ class Manifest(Model):
     # If taskdata is separately stored
     taskdata_uri = URLType()
 
-    # Groundtruth data is stored only as a URL
-    groundtruth_uri = URLType()
+    # Groundtruth data is stored as a URL or optionally as an inlined json-serialized stringtype
+    groundtruth_uri = URLType(required=False)
+    groundtruth = StringType(required=False)
+
+    def validate_groundtruth(self, data, value):
+        if data.get('groundtruth_uri') and data.get('groundtruth'):
+            raise ValidationError(
+                "Specify only groundtruth_uri or groundtruth, not both.")
+        return value
 
     # Configuration id
     confcalc_configuration_id = StringType(required=False)
