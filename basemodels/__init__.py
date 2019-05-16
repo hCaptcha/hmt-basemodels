@@ -95,6 +95,8 @@ class Manifest(Model):
     # If taskdata is directly provided
     taskdata = ListType(ModelType(TaskData))
 
+    validation_data = ListType(ModelType(TaskData))
+    
     # If taskdata is separately stored
     taskdata_uri = URLType()
 
