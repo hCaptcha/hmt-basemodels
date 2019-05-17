@@ -138,11 +138,13 @@ class ManifestTest(unittest.TestCase):
 
         model.requester_question_example = "https://test.com"
         self.assertTrue(model.validate() is None)
-        self.assertIsInstance(model.to_primitive()['requester_question_example'], str)
+        self.assertIsInstance(
+            model.to_primitive()['requester_question_example'], str)
 
         model.requester_question_example = ["https://test.com"]
         self.assertTrue(model.validate() is None)
-        self.assertIsInstance(model.to_primitive()['requester_question_example'], list)
+        self.assertIsInstance(
+            model.to_primitive()['requester_question_example'], list)
 
         model.requester_question_example = "non-url"
         self.assertRaises(schematics.exceptions.DataError, model.validate)
