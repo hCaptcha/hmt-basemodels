@@ -132,6 +132,8 @@ class ManifestTest(unittest.TestCase):
         manifest.confcalc_configuration_id = 'test_conf_id'
         manifest.validate()
 
+        self.assertTrue("confcalc_configuration_id" in manifest.to_primitive())
+
     def test_url_or_list_for_example(self):
         """ validates that we can supply a list or a url to example key if ILB """
         model = a_manifest()
@@ -155,6 +157,17 @@ class ManifestTest(unittest.TestCase):
         model.request_type = "image_label_area_select"
         self.assertRaises(schematics.exceptions.DataError, model.validate)
 
+    def test_restricted_audience(self):
+        """ Test that restricted audience is in the Manifest """
+        manifest = a_manifest()
+        manifest.restricted_audience = {
+            "minimum_client_confidence": 0.3,
+            "lang": "en-us"
+        }
+        manifest.validate()
+        self.assertTrue("restricted_audience" in manifest.to_primitive())
+        self.assertTrue("minimum_client_confidence" in manifest.to_primitive()["restricted_audience"])
+        self.assertTrue("lang" in manifest.to_primitive()["restricted_audience"])
 
 if __name__ == "__main__":
     logging.basicConfig()

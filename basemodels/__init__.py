@@ -1,7 +1,7 @@
 import uuid
 from schematics.models import Model, ValidationError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
-    UUIDType, ModelType, BooleanType, UnionType
+    UUIDType, ModelType, BooleanType, UnionType, MultiType
 
 
 class TaskData(Model):
@@ -23,6 +23,10 @@ class RequestConfig(Model):
     restrict_to_coords = BooleanType()
     minimum_selection_area_per_shape = IntType()
 
+class RestrictedAudience(Model):
+    """ definition of the restricted_audience object in manifest """
+    minimum_client_confidence = FloatType(required=False)
+    lang = StringType(required=False)
 
 class Manifest(Model):
     """ The manifest description. """
@@ -113,6 +117,8 @@ class Manifest(Model):
 
     # Configuration id
     confcalc_configuration_id = StringType(required=False)
+
+    restricted_audience = ModelType(RestrictedAudience, required=False)
 
     def validate_taskdata_uri(self, data, value):
         if data.get('taskdata') and len(
