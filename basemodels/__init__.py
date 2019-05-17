@@ -1,7 +1,7 @@
 import uuid
 from schematics.models import Model, ValidationError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
-    UUIDType, ModelType, BooleanType, UnionType, MultiType
+    UUIDType, ModelType, BooleanType, UnionType
 
 
 class TaskData(Model):
