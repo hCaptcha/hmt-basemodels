@@ -161,13 +161,15 @@ class ManifestTest(unittest.TestCase):
         """ Test that restricted audience is in the Manifest """
         manifest = a_manifest()
         manifest.restricted_audience = {
-            "minimum_client_confidence": 0.3,
-            "lang": "en-us"
+            "lang": [{"en-us": {"score": 0.9}}],
+            "client": [{"minimum_confidence": {"score": 0.9}}]
         }
         manifest.validate()
         self.assertTrue("restricted_audience" in manifest.to_primitive())
-        self.assertTrue("minimum_client_confidence" in manifest.to_primitive()["restricted_audience"])
-        self.assertTrue("lang" in manifest.to_primitive()["restricted_audience"])
+        self.assertTrue("minimum_confidence" in manifest.to_primitive()["restricted_audience"]["client"][0])
+        self.assertEqual(0.9, manifest.to_primitive()["restricted_audience"]["client"][0]["minimum_confidence"]["score"])
+        self.assertTrue("en-us" in manifest.to_primitive()["restricted_audience"]["lang"][0])
+        self.assertEqual(0.9, manifest.to_primitive()["restricted_audience"]["lang"][0]["en-us"]["score"])
 
 if __name__ == "__main__":
     logging.basicConfig()

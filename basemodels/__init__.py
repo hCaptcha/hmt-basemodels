@@ -118,7 +118,7 @@ class Manifest(Model):
     # Configuration id
     confcalc_configuration_id = StringType(required=False)
 
-    restricted_audience = ModelType(RestrictedAudience, required=False)
+    restricted_audience = DictType(ListType(DictType(DictType(FloatType))))
 
     def validate_taskdata_uri(self, data, value):
         if data.get('taskdata') and len(
