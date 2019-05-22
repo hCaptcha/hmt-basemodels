@@ -23,11 +23,6 @@ class RequestConfig(Model):
     restrict_to_coords = BooleanType()
     minimum_selection_area_per_shape = IntType()
 
-class RestrictedAudience(Model):
-    """ definition of the restricted_audience object in manifest """
-    minimum_client_confidence = FloatType(required=False)
-    lang = StringType(required=False)
-
 class Manifest(Model):
     """ The manifest description. """
     job_mode = StringType(
