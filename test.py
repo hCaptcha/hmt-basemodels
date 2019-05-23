@@ -162,12 +162,12 @@ class ManifestTest(unittest.TestCase):
         manifest = a_manifest()
         manifest.restricted_audience = {
             "lang": [{"en-us": {"score": 0.9}}],
-            "client": [{"minimum_confidence": {"score": 0.9}}]
+            "confidence": [{"minimum_client_confidence": {"score": 0.9}}]
         }
         manifest.validate()
         self.assertTrue("restricted_audience" in manifest.to_primitive())
-        self.assertTrue("minimum_confidence" in manifest.to_primitive()["restricted_audience"]["client"][0])
-        self.assertEqual(0.9, manifest.to_primitive()["restricted_audience"]["client"][0]["minimum_confidence"]["score"])
+        self.assertTrue("minimum_client_confidence" in manifest.to_primitive()["restricted_audience"]["confidence"][0])
+        self.assertEqual(0.9, manifest.to_primitive()["restricted_audience"]["confidence"][0]["minimum_client_confidence"]["score"])
         self.assertTrue("en-us" in manifest.to_primitive()["restricted_audience"]["lang"][0])
         self.assertEqual(0.9, manifest.to_primitive()["restricted_audience"]["lang"][0]["en-us"]["score"])
 
