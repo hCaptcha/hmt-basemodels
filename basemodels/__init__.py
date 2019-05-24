@@ -23,7 +23,6 @@ class RequestConfig(Model):
     restrict_to_coords = BooleanType()
     minimum_selection_area_per_shape = IntType()
 
-
 class Manifest(Model):
     """ The manifest description. """
     job_mode = StringType(
@@ -113,6 +112,8 @@ class Manifest(Model):
 
     # Configuration id
     confcalc_configuration_id = StringType(required=False)
+
+    restricted_audience = DictType(ListType(DictType(DictType(FloatType))))
 
     def validate_taskdata_uri(self, data, value):
         if data.get('taskdata') and len(
