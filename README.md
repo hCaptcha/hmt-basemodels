@@ -50,6 +50,16 @@ The tags will need to be pushed to master via a user that has the proper privile
 
 Versioning should follow the [semver](https://semver.org/) versioning methodology and not introduce breaking changes on minor or patch-level changes.
 
+### Manual deploy to PyPi
+In root folder
+- `virtualenv -p python3 venv`
+- `source venv/bin/activate`
+- `pipenv install`
+- `pip install twine`
+- `python3 setup.py sdist bdist_wheel`
+- `twine upload dist/*`
+
+
 ## Have a question?
 
 Join our [Telegram](https://t.me/hcaptchachat) channel, we will gladly answer your questions.
