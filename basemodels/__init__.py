@@ -23,6 +23,73 @@ class RequestConfig(Model):
     restrict_to_coords = BooleanType()
     minimum_selection_area_per_shape = IntType()
 
+
+class NestedManifest(Model):
+    """ The nested manifest description for multi_challenge jobs """
+    job_id = UUIDType(default=uuid.uuid4)
+
+    requester_restricted_answer_set = DictType(DictType(StringType))
+
+    def validate_requester_restricted_answer_set(self, data, value):
+        """image_label_area_select should always have a single RAS set"""
+        if data['request_type'] == 'image_label_area_select':
+            if not value or len(value.keys()) == 0:
+                value = {'label': {}}
+                data['requester_restricted_answer_set'] = value
+        return value
+
+    requester_description = StringType()
+    requester_max_repeats = IntType(default=100)
+    requester_min_repeats = IntType(default=1)
+    requester_question = DictType(StringType)
+
+    requester_question_example = UnionType((URLType, ListType), field=URLType)
+
+    def validate_requester_question_example(self, data, value):
+        if data['request_type'] != 'image_label_binary' and isinstance(
+                value, list):
+            raise ValidationError(
+                "Lists are not allowed in this challenge type")
+        return value
+
+    unsafe_content = BooleanType(default=False)
+    requester_accuracy_target = FloatType(default=.1)
+    request_type = StringType(
+        required=True,
+        choices=[
+            "image_label_binary",
+            "image_label_multiple_choice_one_option",
+            "image_label_multiple_choice_multiple_options",
+            "text_free_entry",
+            "text_multiple_choice_one_option",
+            "text_multiple_choice_multiple_options",
+            "image_label_area_adjust",
+            "image_label_area_select",
+            "image_label_area_select_one_option",  # legacy
+            "image_label_area_select_multiple_options",  # legacy
+            "image_label_single_polygon",
+            "image_label_multiple_polygons",
+            "image_label_semantic_segmentation_one_option",
+            "image_label_semantic_segmentation_multiple_options",
+        ])
+
+    request_config = ModelType(RequestConfig, required=False)
+
+    # Groundtruth data is stored as a URL or optionally as an inlined json-serialized stringtype
+    groundtruth_uri = URLType(required=False)
+    groundtruth = StringType(required=False)
+
+    def validate_groundtruth(self, data, value):
+        if data.get('groundtruth_uri') and data.get('groundtruth'):
+            raise ValidationError(
+                "Specify only groundtruth_uri or groundtruth, not both.")
+        return value
+
+    # Configuration id
+    confcalc_configuration_id = StringType(required=False)
+
+
+
 class Manifest(Model):
     """ The manifest description. """
     job_mode = StringType(
@@ -73,6 +140,9 @@ class Manifest(Model):
     batch_result_delivery_webhook = URLType()
     online_result_delivery_webhook = URLType()
     instant_result_delivery_webhook = URLType()
+
+    multi_challenge_manifests = ListType(ModelType(NestedManifest), required=False)
+
     request_type = StringType(
         required=True,
         choices=[
@@ -90,7 +160,17 @@ class Manifest(Model):
             "image_label_multiple_polygons",
             "image_label_semantic_segmentation_one_option",
             "image_label_semantic_segmentation_multiple_options",
+            "multi_challenge",
         ])
+
+
+    def validate_request_type(self, data, value):
+        """multi_challenge should always have multi_challenge_manifests"""
+        if data['request_type'] == 'multi_challenge':
+            if not data.get('multi_challenge_manifests'):
+                raise ValidationError(
+                    "multi_challenge requires multi_challenge_manifests.")
+        return value
 
     request_config = ModelType(RequestConfig, required=False)
 

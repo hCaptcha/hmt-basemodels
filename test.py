@@ -23,7 +23,8 @@ def a_manifest(number_of_tasks=100,
                minimum_trust=.1,
                request_type=IMAGE_LABEL_BINARY,
                request_config=None,
-               job_mode='batch') -> basemodels.Manifest:
+               job_mode='batch',
+               multi_challenge_manifests=None) -> basemodels.Manifest:
     model = {
         'requester_restricted_answer_set': {
             '0': {
@@ -37,6 +38,7 @@ def a_manifest(number_of_tasks=100,
         },
         'job_mode': job_mode,
         'request_type': request_type,
+        'multi_challenge_manifests': multi_challenge_manifests,
         'unsafe_content': False,
         'task_bid_price': bid_amount,
         'oracle_stake': oracle_stake,
@@ -60,6 +62,38 @@ def a_manifest(number_of_tasks=100,
         model.update({'request_config': request_config})
 
     manifest = basemodels.Manifest(model)
+    manifest.validate()
+
+    return manifest
+
+
+def a_nested_manifest(
+               request_type=IMAGE_LABEL_BINARY,
+               minimum_trust=.1,
+               request_config=None) -> basemodels.Manifest:
+    model = {
+        'requester_restricted_answer_set': {
+            '0': {
+                'en': 'English Answer 1'
+            },
+            '1': {
+                'en': 'English Answer 2',
+                'answer_example_uri':
+                'https://hcaptcha.com/example_answer2.jpg'
+            }
+        },
+        'request_type': request_type,
+        'requester_accuracy_target': minimum_trust,
+        'requester_question': {
+            "en": "How much money are we to make"
+        },
+        'requester_question_example': FAKE_URL,
+    }
+
+    if request_config:
+        model.update({'request_config': request_config})
+
+    manifest = basemodels.NestedManifest(model)
     manifest.validate()
 
     return manifest
@@ -89,6 +123,30 @@ class ManifestTest(unittest.TestCase):
         manifest = a_manifest(
             request_type='image_label_area_select',
             request_config={'shape_type': 'point'})
+
+    def test_can_make_nested_request_config_job_single_nest(self):
+        """Test that jobs with valid nested request_config parameter work"""
+        nested_manifest = a_nested_manifest(
+            request_type='image_label_area_select',
+            request_config={'shape_type': 'point'})
+
+        manifest = a_manifest(
+            request_type='multi_challenge',
+            multi_challenge_manifests=[nested_manifest])
+
+    def test_can_make_nested_request_config_job_multiple_nest(self):
+        """Test that jobs with multiple valid nested request_config parameters work"""
+        nested_manifest = a_nested_manifest(
+            request_type='image_label_area_select',
+            request_config={'shape_type': 'point'})
+
+        nested_manifest_2 = a_nested_manifest(
+            request_type='image_label_area_select',
+            request_config={'shape_type': 'point'})
+
+        manifest = a_manifest(
+            request_type='multi_challenge',
+            multi_challenge_manifests=[nested_manifest, nested_manifest_2])
 
     def test_can_bad_request_config(self):
         """Test that an invalid shape_type in request_config will fail"""
