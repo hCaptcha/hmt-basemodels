@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="hmt-basemodels",
-    version="0.0.7",
+    version="0.0.8",
     author="HUMAN Protocol",
     description=
     "Common data models shared by various components of the Human Protocol stack",
