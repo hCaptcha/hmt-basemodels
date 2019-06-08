@@ -4,6 +4,25 @@ from schematics.types import StringType, DecimalType, BooleanType, IntType, Dict
     UUIDType, ModelType, BooleanType, UnionType
 
 
+BASE_JOB_TYPES = [
+            "image_label_binary",
+            "image_label_multiple_choice",
+            "image_label_multiple_choice_one_option", # historical
+            "image_label_multiple_choice_multiple_options", # historical
+            "text_free_entry",
+            "text_multiple_choice_one_option",
+            "text_multiple_choice_multiple_options",
+            "image_label_area_adjust",
+            "image_label_area_select",
+            "image_label_area_select_one_option",  # legacy
+            "image_label_area_select_multiple_options",  # legacy
+            "image_label_single_polygon",
+            "image_label_multiple_polygons",
+            "image_label_semantic_segmentation_one_option",
+            "image_label_semantic_segmentation_multiple_options",
+            "image_label_text",
+        ]
+
 class TaskData(Model):
     """ objects within taskdata list in Manifest """
     task_key = UUIDType(required=True)
@@ -15,13 +34,21 @@ class RequestConfig(Model):
     """ definition of the request_config object in manifest """
     version = IntType(default=0)
     shape_type = StringType(
-        choices=["point", "bounding_box", "polygon"], required=True)
+        choices=["point", "bounding_box", "polygon"])
     min_points = IntType()
     max_points = IntType()
     min_shapes_per_image = IntType()
     max_shapes_per_image = IntType()
     restrict_to_coords = BooleanType()
     minimum_selection_area_per_shape = IntType()
+    multiple_choice_max_choices = IntType()
+
+    def validate_shape_type(self, data, value):
+        """shape_type should exist if not multiple_choice"""
+        if not data.get('shape_type') and not data.get('multiple_choice_max_choices'):
+            raise ValidationError("shape_type multiple_choice_max_choices required.")
+        return value
+
 
 
 class NestedManifest(Model):
@@ -32,6 +59,11 @@ class NestedManifest(Model):
 
     def validate_requester_restricted_answer_set(self, data, value):
         """image_label_area_select should always have a single RAS set"""
+
+        # validation runs before other params, so need to handle missing case
+        if not data.get('request_type'):
+            raise ValidationError("request_type missing")
+
         if data['request_type'] == 'image_label_area_select':
             if not value or len(value.keys()) == 0:
                 value = {'label': {}}
@@ -46,6 +78,10 @@ class NestedManifest(Model):
     requester_question_example = UnionType((URLType, ListType), field=URLType)
 
     def validate_requester_question_example(self, data, value):
+        # validation runs before other params, so need to handle missing case
+        if not data.get('request_type'):
+            raise ValidationError("request_type missing")
+
         if data['request_type'] != 'image_label_binary' and isinstance(
                 value, list):
             raise ValidationError(
@@ -56,22 +92,7 @@ class NestedManifest(Model):
     requester_accuracy_target = FloatType(default=.1)
     request_type = StringType(
         required=True,
-        choices=[
-            "image_label_binary",
-            "image_label_multiple_choice_one_option",
-            "image_label_multiple_choice_multiple_options",
-            "text_free_entry",
-            "text_multiple_choice_one_option",
-            "text_multiple_choice_multiple_options",
-            "image_label_area_adjust",
-            "image_label_area_select",
-            "image_label_area_select_one_option",  # legacy
-            "image_label_area_select_multiple_options",  # legacy
-            "image_label_single_polygon",
-            "image_label_multiple_polygons",
-            "image_label_semantic_segmentation_one_option",
-            "image_label_semantic_segmentation_multiple_options",
-        ])
+        choices=BASE_JOB_TYPES)
 
     request_config = ModelType(RequestConfig, required=False)
 
@@ -102,6 +123,10 @@ class Manifest(Model):
 
     def validate_requester_restricted_answer_set(self, data, value):
         """image_label_area_select should always have a single RAS set"""
+        # validation runs before other params, so need to handle missing case
+        if not data.get('request_type'):
+            raise ValidationError("request_type missing")
+
         if data['request_type'] == 'image_label_area_select':
             if not value or len(value.keys()) == 0:
                 value = {'label': {}}
@@ -116,6 +141,10 @@ class Manifest(Model):
     requester_question_example = UnionType((URLType, ListType), field=URLType)
 
     def validate_requester_question_example(self, data, value):
+        # validation runs before other params, so need to handle missing case
+        if not data.get('request_type'):
+            raise ValidationError("request_type missing")
+
         if data['request_type'] != 'image_label_binary' and isinstance(
                 value, list):
             raise ValidationError(
@@ -145,27 +174,15 @@ class Manifest(Model):
 
     request_type = StringType(
         required=True,
-        choices=[
-            "image_label_binary",
-            "image_label_multiple_choice_one_option",
-            "image_label_multiple_choice_multiple_options",
-            "text_free_entry",
-            "text_multiple_choice_one_option",
-            "text_multiple_choice_multiple_options",
-            "image_label_area_adjust",
-            "image_label_area_select",
-            "image_label_area_select_one_option",  # legacy
-            "image_label_area_select_multiple_options",  # legacy
-            "image_label_single_polygon",
-            "image_label_multiple_polygons",
-            "image_label_semantic_segmentation_one_option",
-            "image_label_semantic_segmentation_multiple_options",
-            "multi_challenge",
-        ])
+        choices=BASE_JOB_TYPES + ["multi_challenge"])
 
 
     def validate_request_type(self, data, value):
         """multi_challenge should always have multi_challenge_manifests"""
+        # validation runs before other params, so need to handle missing case
+        if not data.get('request_type'):
+            raise ValidationError("request_type missing")
+
         if data['request_type'] == 'multi_challenge':
             if not data.get('multi_challenge_manifests'):
                 raise ValidationError(
