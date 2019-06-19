@@ -3,25 +3,46 @@ from schematics.models import Model, ValidationError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
     UUIDType, ModelType, BooleanType, UnionType
 
-
 BASE_JOB_TYPES = [
-            "image_label_binary",
-            "image_label_multiple_choice",
-            "image_label_multiple_choice_one_option", # historical
-            "image_label_multiple_choice_multiple_options", # historical
-            "text_free_entry",
-            "text_multiple_choice_one_option",
-            "text_multiple_choice_multiple_options",
-            "image_label_area_adjust",
-            "image_label_area_select",
-            "image_label_area_select_one_option",  # legacy
-            "image_label_area_select_multiple_options",  # legacy
-            "image_label_single_polygon",
-            "image_label_multiple_polygons",
-            "image_label_semantic_segmentation_one_option",
-            "image_label_semantic_segmentation_multiple_options",
-            "image_label_text",
-        ]
+    "image_label_binary",
+    "image_label_multiple_choice",
+    "text_free_entry",
+    "text_multiple_choice_one_option",
+    "text_multiple_choice_multiple_options",
+    "image_label_area_adjust",
+    "image_label_area_select",
+    "image_label_single_polygon",
+    "image_label_multiple_polygons",
+    "image_label_semantic_segmentation_one_option",
+    "image_label_semantic_segmentation_multiple_options",
+    "image_label_text",
+]
+
+
+def validate_request_type(self, data, value):
+    """
+    validate request types for all types of challenges
+    multi_challenge should always have multi_challenge_manifests
+    """
+    # validation runs before other params, so need to handle missing case
+    if not data.get('request_type'):
+        raise ValidationError("request_type missing")
+
+    if data.get('request_type') == 'multi_challenge':
+        if not data.get('multi_challenge_manifests'):
+            raise ValidationError(
+                "multi_challenge requires multi_challenge_manifests.")
+    elif data.get('request_type') in [
+            'image_label_multiple_choice', 'image_label_area_select'
+    ]:
+        if data.get('multiple_choice_min_choices') > data.get(
+                'multiple_choice_max_choices'):
+            raise ValidationError(
+                "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices"
+            )
+
+    return value
+
 
 class TaskData(Model):
     """ objects within taskdata list in Manifest """
@@ -33,22 +54,15 @@ class TaskData(Model):
 class RequestConfig(Model):
     """ definition of the request_config object in manifest """
     version = IntType(default=0)
-    shape_type = StringType(
-        choices=["point", "bounding_box", "polygon"])
+    shape_type = StringType(choices=["point", "bounding_box", "polygon"])
     min_points = IntType()
     max_points = IntType()
     min_shapes_per_image = IntType()
     max_shapes_per_image = IntType()
     restrict_to_coords = BooleanType()
     minimum_selection_area_per_shape = IntType()
-    multiple_choice_max_choices = IntType()
-
-    def validate_shape_type(self, data, value):
-        """shape_type should exist if not multiple_choice"""
-        if not data.get('shape_type') and not data.get('multiple_choice_max_choices'):
-            raise ValidationError("shape_type multiple_choice_max_choices required.")
-        return value
-
+    multiple_choice_max_choices = IntType(default=1)
+    multiple_choice_min_choices = IntType(default=1)
 
 
 class NestedManifest(Model):
@@ -90,9 +104,8 @@ class NestedManifest(Model):
 
     unsafe_content = BooleanType(default=False)
     requester_accuracy_target = FloatType(default=.1)
-    request_type = StringType(
-        required=True,
-        choices=BASE_JOB_TYPES)
+    request_type = StringType(required=True, choices=BASE_JOB_TYPES)
+    validate_request_type = validate_request_type
 
     request_config = ModelType(RequestConfig, required=False)
 
@@ -108,7 +121,6 @@ class NestedManifest(Model):
 
     # Configuration id
     confcalc_configuration_id = StringType(required=False)
-
 
 
 class Manifest(Model):
@@ -170,24 +182,12 @@ class Manifest(Model):
     online_result_delivery_webhook = URLType()
     instant_result_delivery_webhook = URLType()
 
-    multi_challenge_manifests = ListType(ModelType(NestedManifest), required=False)
+    multi_challenge_manifests = ListType(
+        ModelType(NestedManifest), required=False)
 
     request_type = StringType(
-        required=True,
-        choices=BASE_JOB_TYPES + ["multi_challenge"])
-
-
-    def validate_request_type(self, data, value):
-        """multi_challenge should always have multi_challenge_manifests"""
-        # validation runs before other params, so need to handle missing case
-        if not data.get('request_type'):
-            raise ValidationError("request_type missing")
-
-        if data['request_type'] == 'multi_challenge':
-            if not data.get('multi_challenge_manifests'):
-                raise ValidationError(
-                    "multi_challenge requires multi_challenge_manifests.")
-        return value
+        required=True, choices=BASE_JOB_TYPES + ["multi_challenge"])
+    validate_request_type = validate_request_type
 
     request_config = ModelType(RequestConfig, required=False)
 

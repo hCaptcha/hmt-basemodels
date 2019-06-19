@@ -67,10 +67,9 @@ def a_manifest(number_of_tasks=100,
     return manifest
 
 
-def a_nested_manifest(
-               request_type=IMAGE_LABEL_BINARY,
-               minimum_trust=.1,
-               request_config=None) -> basemodels.Manifest:
+def a_nested_manifest(request_type=IMAGE_LABEL_BINARY,
+                      minimum_trust=.1,
+                      request_config=None) -> basemodels.Manifest:
     model = {
         'requester_restricted_answer_set': {
             '0': {
@@ -219,112 +218,143 @@ class ManifestTest(unittest.TestCase):
         """ Test that restricted audience is in the Manifest """
         manifest = a_manifest()
         manifest.restricted_audience = {
-            "lang": [{"en-us": {"score": 0.9}}],
-            "confidence": [{"minimum_client_confidence": {"score": 0.9}}]
+            "lang": [{
+                "en-us": {
+                    "score": 0.9
+                }
+            }],
+            "confidence": [{
+                "minimum_client_confidence": {
+                    "score": 0.9
+                }
+            }]
         }
         manifest.validate()
         self.assertTrue("restricted_audience" in manifest.to_primitive())
-        self.assertTrue("minimum_client_confidence" in manifest.to_primitive()["restricted_audience"]["confidence"][0])
-        self.assertEqual(0.9, manifest.to_primitive()["restricted_audience"]["confidence"][0]["minimum_client_confidence"]["score"])
-        self.assertTrue("en-us" in manifest.to_primitive()["restricted_audience"]["lang"][0])
-        self.assertEqual(0.9, manifest.to_primitive()["restricted_audience"]["lang"][0]["en-us"]["score"])
-
+        self.assertTrue("minimum_client_confidence" in manifest.to_primitive()
+                        ["restricted_audience"]["confidence"][0])
+        self.assertEqual(
+            0.9,
+            manifest.to_primitive()["restricted_audience"]["confidence"][0]
+            ["minimum_client_confidence"]["score"])
+        self.assertTrue("en-us" in manifest.to_primitive()
+                        ["restricted_audience"]["lang"][0])
+        self.assertEqual(
+            0.9,
+            manifest.to_primitive()["restricted_audience"]["lang"][0]["en-us"]
+            ["score"])
 
     def test_realistic_multi_challenge_example(self):
         """ validates a realistic multi_challenge manifest """
-        obj =  {
-            'job_mode': 'batch',
-            'request_type': 'image_label_area_select',
-            'unsafe_content': False,
-            'task_bid_price': 1,
-            'oracle_stake': 0.1,
-            'expiration_date': 0,
-            'minimum_trust_server': .1,
-            'minimum_trust_client': .1,
-            'requester_accuracy_target': .1,
-            'recording_oracle_addr': REC_ORACLE,
-            'reputation_oracle_addr': REP_ORACLE,
-            'reputation_agent_addr': REP_ORACLE,        
-            "job_id"               : "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-            "request_type"      : "multi_challenge",
+        obj = {
+            'job_mode':
+            'batch',
+            'request_type':
+            'image_label_area_select',
+            'unsafe_content':
+            False,
+            'task_bid_price':
+            1,
+            'oracle_stake':
+            0.1,
+            'expiration_date':
+            0,
+            'minimum_trust_server':
+            .1,
+            'minimum_trust_client':
+            .1,
+            'requester_accuracy_target':
+            .1,
+            'recording_oracle_addr':
+            REC_ORACLE,
+            'reputation_oracle_addr':
+            REP_ORACLE,
+            'reputation_agent_addr':
+            REP_ORACLE,
+            "job_id":
+            "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+            "request_type":
+            "multi_challenge",
             "requester_question": {
-                "en": "Please draw a bow around the text shown, select the best corresponding labels, and enter the word depicted by the image."
+                "en":
+                "Please draw a bow around the text shown, select the best corresponding labels, and enter the word depicted by the image."
             },
-            "multi_challenge_manifests": [
-                {
-                    "request_type"      : "image_label_area_select",
-                    "job_id"               : "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                    "requester_question": {
-                        "en": "Please draw a bow around the text shown."
-                    },
-                    "request_config": {
-                        "shape_type"          : "polygon",
-                        "min_points"          : 1,
-                        "max_points"          : 4,
-                        "min_shapes_per_image": 1,
-                        "max_shapes_per_image": 4
-                    }
-                }, {
-                    "request_type"      : "image_label_multiple_choice",
-                    "job_id"               : "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                    "requester_question": {
-                        "en": "Select the corresponding label."
-                    },
-                    "requester_restricted_answer_set": {
-                        "print": {
-                            "en": "Print"
-                        },
-                        "hand-writing": {
-                            "en": "Hand Writing"
-                        }
-                    },
-                    "request_config": {
-                        "multiple_choice_max_choices": 1
-                    }
-                }, {
-                    "request_type"      : "image_label_multiple_choice",
-                    "job_id"               : "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                    "requester_question": {
-                        "en": "Select the corresponding labels."
-                    },
-                    "requester_restricted_answer_set": {
-                        "top-bottom": {
-                            "en": "Top to Bottom"
-                        },
-                        "bottom-top": {
-                            "en": "Bottom to Top"
-                        },
-                        "left-right": {
-                            "en": "Left to Right"
-                        },
-                        "right-left": {
-                            "en": "Right to Left"
-                        }
-                    },
-                    "request_config": {
-                        "multiple_choice_max_choices": 1
-                    }
-                }, {
-                    "request_type"      : "image_label_text",
-                    "job_id"               : "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                    "requester_question": {
-                        "en": "Please enter the word in the image."
-                    }
+            "multi_challenge_manifests":
+            [{
+                "request_type": "image_label_area_select",
+                "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+                "requester_question": {
+                    "en": "Please draw a bow around the text shown."
+                },
+                "request_config": {
+                    "shape_type": "polygon",
+                    "min_points": 1,
+                    "max_points": 4,
+                    "min_shapes_per_image": 1,
+                    "max_shapes_per_image": 4
                 }
-            ],
-            "taskdata": [
-                {
-                    "datapoint_hash": "sha1:5daf66c6031df7f8913bfa0b52e53e3bcd42aab3",
-                    "datapoint_uri" : "http://test.com/task.jpg",
-                    "task_key"      : "2279daef-d10a-4b0f-85d1-0ccbf7c8906b"
-                }
-            ]
+            },
+             {
+                 "request_type": "image_label_multiple_choice",
+                 "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+                 "requester_question": {
+                     "en": "Select the corresponding label."
+                 },
+                 "requester_restricted_answer_set": {
+                     "print": {
+                         "en": "Print"
+                     },
+                     "hand-writing": {
+                         "en": "Hand Writing"
+                     }
+                 },
+                 "request_config": {
+                     "multiple_choice_max_choices": 1
+                 }
+             },
+             {
+                 "request_type": "image_label_multiple_choice",
+                 "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+                 "requester_question": {
+                     "en": "Select the corresponding labels."
+                 },
+                 "requester_restricted_answer_set": {
+                     "top-bottom": {
+                         "en": "Top to Bottom"
+                     },
+                     "bottom-top": {
+                         "en": "Bottom to Top"
+                     },
+                     "left-right": {
+                         "en": "Left to Right"
+                     },
+                     "right-left": {
+                         "en": "Right to Left"
+                     }
+                 },
+                 "request_config": {
+                     "multiple_choice_max_choices": 1
+                 }
+             },
+             {
+                 "request_type": "image_label_text",
+                 "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+                 "requester_question": {
+                     "en": "Please enter the word in the image."
+                 }
+             }],
+            "taskdata": [{
+                "datapoint_hash":
+                "sha1:5daf66c6031df7f8913bfa0b52e53e3bcd42aab3",
+                "datapoint_uri": "http://test.com/task.jpg",
+                "task_key": "2279daef-d10a-4b0f-85d1-0ccbf7c8906b"
+            }]
         }
-
 
         model = basemodels.Manifest(obj)
         # print(model.to_primitive())
         self.assertTrue(model.validate() is None)
+
 
 if __name__ == "__main__":
     logging.basicConfig()
