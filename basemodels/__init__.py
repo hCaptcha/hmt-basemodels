@@ -35,8 +35,8 @@ def validate_request_type(self, data, value):
     elif data.get('request_type') in [
             'image_label_multiple_choice', 'image_label_area_select'
     ]:
-        if data.get('multiple_choice_min_choices') > data.get(
-                'multiple_choice_max_choices'):
+        if data.get('multiple_choice_min_choices', 0) > data.get(
+                'multiple_choice_max_choices', 0):
             raise ValidationError(
                 "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices"
             )
