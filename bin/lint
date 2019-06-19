@@ -2,11 +2,11 @@
 set -exu
 
 FILES="*.py basemodels/*.py"
-if [ -z ${CI+x} ]
-	then
-	yapf --i $FILES 
+
+if [ -z ${CI+x} ]; then
+	yapf --style yapf.cfg --i $FILES 
 	mypy $FILES --ignore-missing-imports
 else
-	yapf --diff $FILES
-    mypy $FILES --ignore-missing-imports
+	yapf --style yapf.cfg --diff $FILES
+	mypy $FILES --ignore-missing-imports
 fi

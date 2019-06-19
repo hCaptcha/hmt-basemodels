@@ -30,16 +30,11 @@ def validate_request_type(self, data, value):
 
     if data.get('request_type') == 'multi_challenge':
         if not data.get('multi_challenge_manifests'):
+            raise ValidationError("multi_challenge requires multi_challenge_manifests.")
+    elif data.get('request_type') in ['image_label_multiple_choice', 'image_label_area_select']:
+        if data.get('multiple_choice_min_choices', 1) > data.get('multiple_choice_max_choices', 1):
             raise ValidationError(
-                "multi_challenge requires multi_challenge_manifests.")
-    elif data.get('request_type') in [
-            'image_label_multiple_choice', 'image_label_area_select'
-    ]:
-        if data.get('multiple_choice_min_choices', 1) > data.get(
-                'multiple_choice_max_choices', 1):
-            raise ValidationError(
-                "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices"
-            )
+                "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
 
     return value
 
@@ -96,10 +91,8 @@ class NestedManifest(Model):
         if not data.get('request_type'):
             raise ValidationError("request_type missing")
 
-        if data['request_type'] != 'image_label_binary' and isinstance(
-                value, list):
-            raise ValidationError(
-                "Lists are not allowed in this challenge type")
+        if data['request_type'] != 'image_label_binary' and isinstance(value, list):
+            raise ValidationError("Lists are not allowed in this challenge type")
         return value
 
     unsafe_content = BooleanType(default=False)
@@ -115,8 +108,7 @@ class NestedManifest(Model):
 
     def validate_groundtruth(self, data, value):
         if data.get('groundtruth_uri') and data.get('groundtruth'):
-            raise ValidationError(
-                "Specify only groundtruth_uri or groundtruth, not both.")
+            raise ValidationError("Specify only groundtruth_uri or groundtruth, not both.")
         return value
 
     # Configuration id
@@ -125,8 +117,7 @@ class NestedManifest(Model):
 
 class Manifest(Model):
     """ The manifest description. """
-    job_mode = StringType(
-        required=True, choices=["batch", "online", "instant_delivery"])
+    job_mode = StringType(required=True, choices=["batch", "online", "instant_delivery"])
     job_api_key = UUIDType(default=uuid.uuid4)
     job_id = UUIDType(default=uuid.uuid4)
     job_total_tasks = IntType()
@@ -157,10 +148,8 @@ class Manifest(Model):
         if not data.get('request_type'):
             raise ValidationError("request_type missing")
 
-        if data['request_type'] != 'image_label_binary' and isinstance(
-                value, list):
-            raise ValidationError(
-                "Lists are not allowed in this challenge type")
+        if data['request_type'] != 'image_label_binary' and isinstance(value, list):
+            raise ValidationError("Lists are not allowed in this challenge type")
         return value
 
     unsafe_content = BooleanType(default=False)
@@ -182,11 +171,9 @@ class Manifest(Model):
     online_result_delivery_webhook = URLType()
     instant_result_delivery_webhook = URLType()
 
-    multi_challenge_manifests = ListType(
-        ModelType(NestedManifest), required=False)
+    multi_challenge_manifests = ListType(ModelType(NestedManifest), required=False)
 
-    request_type = StringType(
-        required=True, choices=BASE_JOB_TYPES + ["multi_challenge"])
+    request_type = StringType(required=True, choices=BASE_JOB_TYPES + ["multi_challenge"])
     validate_request_type = validate_request_type
 
     request_config = ModelType(RequestConfig, required=False)
@@ -203,8 +190,7 @@ class Manifest(Model):
 
     def validate_groundtruth(self, data, value):
         if data.get('groundtruth_uri') and data.get('groundtruth'):
-            raise ValidationError(
-                "Specify only groundtruth_uri or groundtruth, not both.")
+            raise ValidationError("Specify only groundtruth_uri or groundtruth, not both.")
         return value
 
     # Configuration id
@@ -213,11 +199,9 @@ class Manifest(Model):
     restricted_audience = DictType(ListType(DictType(DictType(FloatType))))
 
     def validate_taskdata_uri(self, data, value):
-        if data.get('taskdata') and len(
-                data.get('taskdata')) > 0 and data.get('taskdata_uri'):
-            raise ValidationError(
-                u'Specify only one of taskdata {} or taskdata_uri {}'.format(
-                    data.get('taskdata'), data.get('taskdata_uri')))
+        if data.get('taskdata') and len(data.get('taskdata')) > 0 and data.get('taskdata_uri'):
+            raise ValidationError(u'Specify only one of taskdata {} or taskdata_uri {}'.format(
+                data.get('taskdata'), data.get('taskdata_uri')))
         return value
 
     validate_taskdata = validate_taskdata_uri

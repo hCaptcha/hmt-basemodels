@@ -4,11 +4,11 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+yapf = "==0.25.0"
+mypy = "==0.670"
 
 [packages]
-yapf = "*"
 schematics = "*"
-mypy = "*"
 
 [requires]
 python_version = "3.6"

@@ -10,7 +10,7 @@ ENV LANG C.UTF-8
 
 COPY Pipfile Pipfile.lock /work/
 RUN pip3 install pipenv
-RUN pipenv install --system --deploy
+RUN pipenv install --system --deploy --dev
 
 COPY test.py /work/
 COPY basemodels /work/basemodels/
