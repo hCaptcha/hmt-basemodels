@@ -4,9 +4,9 @@ set -exu
 FILES="*.py basemodels/*.py"
 
 if [ -z ${CI+x} ]; then
-	yapf --style yapf.cfg --i $FILES 
+	yapf -i  --style yapf.cfg $FILES
 	mypy $FILES --ignore-missing-imports
 else
-	yapf --style yapf.cfg --diff $FILES
+	yapf --diff --style yapf.cfg $FILES
 	mypy $FILES --ignore-missing-imports
 fi
