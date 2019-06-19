@@ -54,7 +54,7 @@ Versioning should follow the [semver](https://semver.org/) versioning methodolog
 In root folder
 - `virtualenv -p python3 venv`
 - `source venv/bin/activate`
-- `pipenv install`
+- `pipenv install --dev`
 - `pip install twine`
 - `python3 setup.py sdist bdist_wheel`
 - `twine upload dist/*`
