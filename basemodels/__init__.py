@@ -125,6 +125,8 @@ class NestedManifest(Model):
     # Configuration id
     confcalc_configuration_id = StringType(required=False)
 
+    webhook = ModelType(Webhook)
+
 
 class Manifest(Model):
     """ The manifest description. """

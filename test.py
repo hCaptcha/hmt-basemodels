@@ -328,14 +328,28 @@ class ManifestTest(unittest.TestCase):
         """ Test that webhook is correct """
         webhook = {
             "webhook_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-            "chunk_completed": [],
             "job_completed": ["http://test.com"]
         }
 
-        model = basemodels.Webhook(webhook)
-        model.validate()
+        webhook_model = basemodels.Webhook(webhook)
+        webhook_model.validate()
+        self.assertTrue("webhook_id" in webhook_model.to_primitive())
 
-        self.assertTrue("webhook_id" in model.to_primitive())
+        model = a_manifest()
+        model.webhook = webhook
+        model.validate()
+        self.assertTrue("webhook" in model.to_primitive())
+
+    def test_webhook_url_broken(self):
+        """ Test that webhook validation fails if url is broken """
+        webhook = {
+            "webhook_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+            "job_completed": ["not-a-url"]
+        }
+
+        webhook_model = basemodels.Webhook(webhook)
+        self.assertRaises(schematics.exceptions.DataError, webhook_model.validate)
+
 
 if __name__ == "__main__":
     logging.basicConfig()
