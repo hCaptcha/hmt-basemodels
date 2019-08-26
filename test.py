@@ -324,6 +324,18 @@ class ManifestTest(unittest.TestCase):
         # print(model.to_primitive())
         self.assertTrue(model.validate() is None)
 
+    def test_webhook(self):
+        """ Test that webhook is correct """
+        webhook = {
+            "webhook_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+            "chunk_completed": [],
+            "job_completed": ["http://test.com"]
+        }
+
+        model = basemodels.Webhook(webhook)
+        model.validate()
+
+        self.assertTrue("webhook_id" in model.to_primitive())
 
 if __name__ == "__main__":
     logging.basicConfig()

@@ -38,6 +38,17 @@ def validate_request_type(self, data, value):
 
     return value
 
+class Webhook(Model):
+    """ Model for webhook configuration """
+    webhook_id = UUIDType(required=True)
+    chunk_completed = ListType(URLType(), required=False)
+    job_completed = ListType(URLType(), required=False)
+
+    # States that might be interesting later
+    # job_skipped = ListType(URLType(), required=False)
+    # job_inserted = ListType(URLType(), required=False)
+    # job_activated = ListType(URLType(), required=False)
+
 
 class TaskData(Model):
     """ objects within taskdata list in Manifest """
@@ -205,3 +216,5 @@ class Manifest(Model):
         return value
 
     validate_taskdata = validate_taskdata_uri
+
+    webhook = ModelType(Webhook)
