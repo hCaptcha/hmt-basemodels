@@ -41,13 +41,13 @@ def validate_request_type(self, data, value):
 class Webhook(Model):
     """ Model for webhook configuration """
     webhook_id = UUIDType(required=True)
-    chunk_completed = ListType(URLType(), required=False)
-    job_completed = ListType(URLType(), required=False)
+    chunk_completed = ListType(StringType(), required=False)
+    job_completed = ListType(StringType(), required=False)
 
     # States that might be interesting later
-    # job_skipped = ListType(URLType(), required=False)
-    # job_inserted = ListType(URLType(), required=False)
-    # job_activated = ListType(URLType(), required=False)
+    # job_skipped = ListType(StringType(), required=False)
+    # job_inserted = ListType(StringType(), required=False)
+    # job_activated = ListType(StringType(), required=False)
 
 
 class TaskData(Model):
