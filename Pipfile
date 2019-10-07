@@ -9,6 +9,7 @@ mypy = "==0.670"
 
 [packages]
 schematics = "*"
+marshmallow = "*"
 
 [requires]
 python_version = "3.6"

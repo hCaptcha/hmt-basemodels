@@ -341,6 +341,37 @@ class ManifestTest(unittest.TestCase):
         self.assertTrue("webhook" in model.to_primitive())
 
 
+def test_vgg(self):
+    content = {
+        "datapoints": [{
+            "task_uri": "https://mydomain.com/image.jpg",
+            "metadata": {
+                "filename": "image.jpg"
+            },
+            "class_attributes": {
+                "0": {
+                    "class_attributes": {
+                        "dog": False,
+                        "cat": False
+                    }
+                }
+            },
+            "regions": [{
+                "region_attributes": {
+                    "region_key": "region_value"
+                },
+                "shape_attributes": {
+                    "coords": [1, 2, 3, 4, 5, 6, 7, 8.],
+                    "name": "shape_type"
+                }
+            }],
+        }]
+    }
+
+    parsed = basemodels.VggDataManifest(content)
+    parsed.validate()
+
+
 if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger("urllib3").setLevel(logging.INFO)

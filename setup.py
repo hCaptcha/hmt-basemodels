@@ -13,4 +13,4 @@ setuptools.setup(
         "Programming Language :: Python"
     ],
     packages=setuptools.find_packages(),
-    install_requires=["schematics>=2.1.0"])
+    install_requires=["schematics>=2.1.0", "marshmallow>=3.2.1"])
