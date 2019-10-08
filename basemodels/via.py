@@ -1,5 +1,5 @@
 """
-The VGG Format intends to define a standard HMT format for data files that contain results
+The VIA Format intends to define a standard HMT format for data files that contain results
 and the annotations associated with that image data.  Each file takes the general form of:
 
 {
@@ -10,6 +10,7 @@ and the annotations associated with that image data.  Each file takes the genera
         },
         "class_attributes": {
             "0": {
+                # This nested class_attributes field will soon be deprecated
                 "class_attributes": {
                     "dog": False,
                     "cat": False
@@ -39,6 +40,7 @@ class RegionAttributesSchema(Schema):
 
 
 class ClassAttributeSchema(Schema):
+    # inner class attributes field not required, here for legacy purposes
     class_attributes = fields.Dict(keys=fields.Str())
     regions = fields.Nested(RegionAttributesSchema, many=True)
 
@@ -49,6 +51,7 @@ class DatapointSchema(Schema):
     class_attributes = fields.Dict(values=fields.Nested(ClassAttributeSchema))
 
 
-class VggDataManifest(Schema):
-    """ Main entrypoint to define the VGG Data Format """
+class ViaDataManifest(Schema):
+    """ Main entrypoint to define the VIA Data Format """
     datapoints = fields.Nested(DatapointSchema, many=True, required=True)
+    version = fields.Str(default='v1')
