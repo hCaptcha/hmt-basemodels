@@ -54,4 +54,4 @@ class DatapointSchema(Schema):
 class ViaDataManifest(Schema):
     """ Main entrypoint to define the VIA Data Format """
     datapoints = fields.Nested(DatapointSchema, many=True, required=True)
-    version = fields.Str(default='v1')
+    version = fields.Integer(default=1)

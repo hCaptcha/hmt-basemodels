@@ -342,7 +342,8 @@ class ManifestTest(unittest.TestCase):
 
 
 class ViaTest(unittest.TestCase):
-    def test_via(self):
+    def test_via_legacy_case(self):
+        """ tests case with inner class_attributes """
         content = {
             "datapoints": [{
                 "task_uri": "https://mydomain.com/image.jpg",
@@ -371,7 +372,36 @@ class ViaTest(unittest.TestCase):
 
         parsed = basemodels.ViaDataManifest().dump(content)
         self.assertEqual(len(parsed['datapoints']), 1)
-        self.assertEqual(parsed['version'], 'v1')
+        self.assertEqual(parsed['version'], 1)
+
+    def test_via_v1_case(self):
+        """ tests case where we dont use the inner class_attributes """
+        content = {
+            "datapoints": [{
+                "task_uri": "https://mydomain.com/image.jpg",
+                "metadata": {
+                    "filename": "image.jpg"
+                },
+                "class_attributes": {
+                    "dog": False,
+                    "cat": False
+                },
+                "regions": [{
+                    "region_attributes": {
+                        "region_key": "region_value"
+                    },
+                    "shape_attributes": {
+                        "coords": [1, 2, 3, 4, 5, 6, 7, 8.],
+                        "name": "shape_type"
+                    }
+                }],
+            }]
+        }
+
+        parsed = basemodels.ViaDataManifest().dump(content)
+        self.assertEqual(len(parsed['datapoints']), 1)
+        self.assertEqual(parsed['version'], 1)
+        self.assertIn('dog', parsed['datapoints'][0]['class_attributes'])
 
 
 if __name__ == "__main__":
