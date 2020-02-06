@@ -172,6 +172,7 @@ class Manifest(Model):
     expiration_date = IntType()
     requester_accuracy_target = FloatType(default=.1)
     manifest_smart_bounty_addr = StringType()
+    hmtoken_addr = StringType()
     minimum_trust_server = FloatType(default=.1)
     minimum_trust_client = FloatType(default=.1)
     recording_oracle_addr = StringType(required=True)
