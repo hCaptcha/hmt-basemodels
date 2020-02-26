@@ -165,7 +165,10 @@ class Manifest(Model):
         if not data.get('request_type'):
             raise ValidationError("request_type missing")
 
-        if data['request_type'] != 'image_label_binary' and isinstance(value, list):
+        # based on https://github.com/hCaptcha/hmt-basemodels/issues/27#issuecomment-590706643
+        supports_lists = ['image_label_area_select', 'image_label_binary']
+
+        if isinstance(value, list) and not data['request_type'] in supports_lists:
             raise ValidationError("Lists are not allowed in this challenge type")
         return value
 
