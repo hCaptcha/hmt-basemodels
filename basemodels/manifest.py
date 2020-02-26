@@ -134,7 +134,7 @@ class Manifest(Model):
     job_mode = StringType(required=True, choices=["batch", "online", "instant_delivery"])
     job_api_key = UUIDType(default=uuid.uuid4)
     job_id = UUIDType(default=uuid.uuid4)
-    job_total_tasks = IntType()
+    job_total_tasks = IntType(required=True)
 
     requester_restricted_answer_set = DictType(DictType(StringType))
 
