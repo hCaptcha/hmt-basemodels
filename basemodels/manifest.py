@@ -1,7 +1,7 @@
 import uuid
 from schematics.models import Model, ValidationError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
-    UUIDType, ModelType, BooleanType, UnionType
+    UUIDType, ModelType, BooleanType, UnionType, NumberType
 
 BASE_JOB_TYPES = [
     "image_label_binary",
@@ -72,6 +72,14 @@ class RequestConfig(Model):
     multiple_choice_min_choices = IntType(default=1)
 
 
+class InternalConfig(Model):
+    """ discarded from incoming manifests """
+    exchange = DictType(StringType, NumberType)
+    reco = DictType(StringType, NumberType)
+    repo = DictType(StringType, NumberType)
+    other = DictType(StringType, NumberType)
+
+
 class NestedManifest(Model):
     """ The nested manifest description for multi_challenge jobs """
     job_id = UUIDType(default=uuid.uuid4)
@@ -126,7 +134,7 @@ class NestedManifest(Model):
             raise ValidationError("Specify only groundtruth_uri or groundtruth, not both.")
         return value
 
-    # Configuration id
+    # Configuration id -- XXX LEGACY
     confcalc_configuration_id = StringType(required=False)
 
     webhook = ModelType(Webhook)
@@ -214,7 +222,10 @@ class Manifest(Model):
             raise ValidationError("Specify only groundtruth_uri or groundtruth, not both.")
         return value
 
-    # Configuration id
+    # internal config options for param tests etc.
+    internal_config = ModelType(InternalConfig, required=False)
+
+    # Configuration id -- XXX LEGACY
     confcalc_configuration_id = StringType(required=False)
 
     restricted_audience = DictType(ListType(DictType(DictType(FloatType))))

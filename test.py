@@ -25,6 +25,7 @@ def a_manifest(number_of_tasks=100,
                request_config=None,
                job_mode='batch',
                multi_challenge_manifests=None) -> basemodels.Manifest:
+    internal_config = {'exchange': {'a': 1, 'b': 'c'}}
     model = {
         'requester_restricted_answer_set': {
             '0': {
@@ -37,6 +38,7 @@ def a_manifest(number_of_tasks=100,
         },
         'job_mode': job_mode,
         'request_type': request_type,
+        'internal_config': internal_config,
         'multi_challenge_manifests': multi_challenge_manifests,
         'unsafe_content': False,
         'task_bid_price': bid_amount,
@@ -182,7 +184,7 @@ class ManifestTest(unittest.TestCase):
         self.assertTrue("confcalc_configuration_id" in manifest.to_primitive())
 
     def test_url_or_list_for_example(self):
-        """ validates that we can supply a list or a url to example key if ILB """
+        """ validates that we can supply a list or a url to example key """
         model = a_manifest()
 
         model.requester_question_example = "https://test.com"
@@ -198,9 +200,9 @@ class ManifestTest(unittest.TestCase):
         model.requester_question_example = ["non-url"]
         self.assertRaises(schematics.exceptions.DataError, model.validate)
 
-        # dont allow lists in non-ilb types
+        # we now allow lists in non-ilb types
         model.request_type = "image_label_area_select"
-        self.assertRaises(schematics.exceptions.DataError, model.validate)
+        self.assertTrue(model.validate)
 
     def test_restricted_audience(self):
         """ Test that restricted audience is in the Manifest """
@@ -242,6 +244,7 @@ class ManifestTest(unittest.TestCase):
             'minimum_trust_server': .1,
             'minimum_trust_client': .1,
             'requester_accuracy_target': .1,
+            'job_total_tasks': 1000,
             'recording_oracle_addr': REC_ORACLE,
             'reputation_oracle_addr': REP_ORACLE,
             'reputation_agent_addr': REP_ORACLE,
