@@ -217,7 +217,8 @@ class ManifestTest(unittest.TestCase):
                 "minimum_client_confidence": {
                     "score": 0.9
                 }
-            }]
+            }],
+            "min_difficulty": 2,
         }
         manifest.validate()
         self.assertTrue("restricted_audience" in manifest.to_primitive())
@@ -231,6 +232,7 @@ class ManifestTest(unittest.TestCase):
         self.assertEqual(
             0.9,
             manifest.to_primitive()["restricted_audience"]["lang"][0]["en-us"]["score"])
+        self.assertEqual(2, manifest.to_primitive()["restricted_audience"]["min_difficulty"])
 
     def test_realistic_multi_challenge_example(self):
         """ validates a realistic multi_challenge manifest """
