@@ -1,4 +1,5 @@
 #!/bin/bash
+set -exu
 
 docker-compose build
 docker-compose run basemodels ./bin/test
