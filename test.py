@@ -217,7 +217,8 @@ class ManifestTest(unittest.TestCase):
                 "minimum_client_confidence": {
                     "score": 0.9
                 }
-            }]
+            }],
+            "min_difficulty": 2,
         }
         manifest.validate()
         self.assertTrue("restricted_audience" in manifest.to_primitive())
