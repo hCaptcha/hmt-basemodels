@@ -74,10 +74,10 @@ class RequestConfig(Model):
 
 class InternalConfig(Model):
     """ discarded from incoming manifests """
-    exchange = DictType(StringType, NumberType)
-    reco = DictType(StringType, NumberType)
-    repo = DictType(StringType, NumberType)
-    other = DictType(StringType, NumberType)
+    exchange = DictType(StringType, UnionType([StringType, IntType, FloatType]))
+    reco = DictType(StringType, UnionType([StringType, IntType, FloatType]))
+    repo = DictType(StringType, UnionType([StringType, IntType, FloatType]))
+    other = DictType(StringType, UnionType([StringType, IntType, FloatType]))
 
 
 class NestedManifest(Model):

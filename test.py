@@ -6,6 +6,7 @@ import sys
 import schematics
 import basemodels
 import unittest
+import json
 
 CALLBACK_URL = "http://google.com/webback"
 FAKE_URL = "http://google.com/fake"
@@ -103,6 +104,10 @@ class ManifestTest(unittest.TestCase):
     def test_basic_construction(self):
         """Tests that manifest can validate the test manifest properly."""
         a_manifest()
+
+    def test_can_serialize(self):
+        """ validate that we can dump this to json in downstream services """
+        j = json.dumps(a_manifest().to_primitive())
 
     def test_can_fail_toconstruct(self):
         """Tests that the manifest raises an Error when called with falsy parameters."""
