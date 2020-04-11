@@ -18,10 +18,12 @@ deploy:
     source: ssbarnea/dpl
     branch: master
   password:
+    # note to any OSINT auditors: this is a standard travis-encrypted key. see: https://docs.travis-ci.com/user/encryption-keys/
     secure: "EfaHObFKrJ0Kodj0hbPS4k46IDcXaeXmxgM6anmRK2Zt6cqo/SWNVFE1YjnEvcb4X8uo8NKv+50aF5ETiqksUACO07QTkpKM1x5PtH37T9CP8K9SvffjZmNprTSKJ2eAq7Ay8+YUk5CFJc4sHBd3LiuV+mZk95/DHjuQps5OqslrZSfewd37XxzUYE/OFvBK7gLcIoZ6X7tLC+a+IYe1Ce2XxRAKTH0Vtd/pFlgKIHJ5tP52Zl/mSU5FMJVK/RVjQLHhbdVgckaiQbB8Ic01JfyIfbNeioOB+D1bcSC6LMp8bJRliC0mwtQV1nN7XS1cy7lLT/RHJJGEx3uBG98BqtpsABbR3Q789rv6fQH8rmi+ExPEERiTxZE+d4Ht42SfcLB96iXIrNMo1EGGpuVEc8MiPVMx3hBMhR2lMo4oavHaCFxsfv8shhTiqHdJ7zAJe+4oPmCTCEBebVnL+2xJQhJOVLF/OTEUDmIRha41nbxUHdl4zdtGKOrKNwXR19HoZIM7lN/K9+dySPqB4i25ksHEBS8u1CUemLWh1VeQqZH3cFPI2OxTcwF/OER+VNR/PHo5Nu3m8KtvYjt9dsuUAum08vWcUBmIdvPOzI81N11D2J2xuA0Yua4knj3DviV9TAwM+cSwxm+5toM6RdWEQhkt0gLSCPHitVWu4HoSqyo="
   on:
     tags: true
 
 notifications:
   slack:
+    # note to any OSINT auditors: this is a standard travis-encrypted key. see: https://docs.travis-ci.com/user/encryption-keys/
     secure: "2YGwqy5AyBK8Ot/hKJl3zn+b/wYkqzSN9b8Ulb95nCXG8gRD1WruLxV4ac+FrNZektSL3t4vMNN0IoaUDv8rryMQvZIru/ZJaUeUUXH1hOWOnsvpfY7pqniCyAbz4IVhhzMd5M+rpyDQOOoTCxlhwpivmSwBrb6KZN87D65pOO1bOQ83ihX7t/kETuOWaYWWeXva6CH898EiWWuKEvxGNxVr0nkWh9HYFPhoS1ApA/DsdpixqNwZsCYH06b3mfZR+ayNeVBAJ6ZbMBlYUqKs935uWJo97M5apMEOkxGA5RebD5LJU1YOB/zIGz7UYRkN2eUAiZu9WhY7PxKeinErd+tpCUCT2IiH6bM9JuTAv5SEyM99kqtsdcabtdJBBf1yfqXylvkQn/MHVg43ImZM3t5ZooPHy3it4AHc0XMi/1ax53DFoFPjVKodMqLcpCsFh8g5rK3PjzuMhrdAEzi3RH89YB3J6d5ckZoikIY3XtlH4c4LuVIL+qhdon4onoUqM/OOMjH8f9J6Dv8HuxXwbvE1I9j9upT8mYIClsHg6UcsEI4mvFG3k1NLKqkvGJX+shvBT9cutfpPORqRyB+9rWFMT7KJ2gyu/4MMgOOTJvMffpjEdw0igzrcj2XJw0dQBsOvfyQ3Y44doMakdpd5ZNn5LHNrdWSHuyjD1rIzlCY="
