@@ -6,6 +6,7 @@ import sys
 import schematics
 import basemodels
 import unittest
+import httpretty
 import json
 
 CALLBACK_URL = "http://google.com/webback"
@@ -412,6 +413,177 @@ class ViaTest(unittest.TestCase):
         self.assertEqual(len(parsed['datapoints']), 1)
         self.assertEqual(parsed['version'], 1)
         self.assertIn('dog', parsed['datapoints'][0]['class_attributes'])
+
+
+@httpretty.activate
+class TestValidateManifestUris(unittest.TestCase):
+    def register_http_response(self, uri="https://uri.com", manifest=None, body=None):
+        httpretty.register_uri(httpretty.GET, uri, body=json.dumps(body))
+
+    def validate_groundtruth_response(self, request_type, body):
+        uri = "https://uri.com"
+        manifest = {"groundtruth_uri": uri, "request_type": request_type}
+
+        self.register_http_response(uri, manifest, body)
+
+        basemodels.validate_manifest_uris(manifest)
+
+    def test_no_uris(self):
+        """ should not raise if there are no uris to validate """
+        manifest = {}
+        basemodels.validate_manifest_uris(manifest)
+
+    def test_groundtruth_uri_ilb_valid(self):
+        body = {
+            "https://domain.com/123/file1.jpeg": ["false", "false", "false"],
+            "https://domain.com/456/file2.jpeg": ["false", "true", "false"],
+        }
+
+        self.validate_groundtruth_response("image_label_binary", body)
+
+    def test_groundtruth_uri_ilb_invalid(self):
+        body = {"not_uri": ["false", "false", True]}
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            self.validate_groundtruth_response("image_label_binary", body)
+
+    def test_groundtruth_uri_ilb_invalid_format(self):
+        """ should raise if groundtruth_uri contains array instead of object """
+        body = [{"key": "value"}]
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            self.validate_groundtruth_response("image_label_binary", body)
+
+    def test_groundtruth_uri_ilmc_valid(self):
+        body = {
+            "https://domain.com/file1.jpeg": [["cat"], ["cat"], ["cat"]],
+            "https://domain.com/file2.jpeg": [["dog"], ["dog"], ["dog"]]
+        }
+
+        self.validate_groundtruth_response("image_label_multiple_choice", body)
+
+    def test_groundtruth_uri_ilmc_invalid_key(self):
+        body = {"not_uri": [["cat"], ["cat"], ["cat"]]}
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            self.validate_groundtruth_response("image_label_multiple_choice", body)
+
+    def test_groundtruth_uri_ilmc_invalid_value(self):
+        body = {
+            "https://domain.com/file1.jpeg": [True, False],
+        }
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            self.validate_groundtruth_response("image_label_multiple_choice", body)
+
+    def test_groundtruth_uri_ilas_valid(self):
+        body = {
+            "https://domain.com/file1.jpeg": [[{
+                "entity_name": 0,
+                "entity_type": "gate",
+                "entity_coords": [275, 184, 454, 183, 453, 366, 266, 367]
+            }]]
+        }
+
+        self.validate_groundtruth_response("image_label_area_select", body)
+
+    def test_groundtruth_uri_ilas_invalid_key(self):
+        body = {
+            "not_uri": [[{
+                "entity_name": 0,
+                "entity_type": "gate",
+                "entity_coords": [275, 184, 454, 183, 453, 366, 266, 367]
+            }]]
+        }
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            self.validate_groundtruth_response("image_label_area_select", body)
+
+    def test_groundtruth_uri_ilas_invalid_value(self):
+        body = {"https://domain.com/file1.jpeg": [[True]]}
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            self.validate_groundtruth_response("image_label_area_select", body)
+
+    def test_taskdata_empty(self):
+        """ should raise if taskdata_uri contains no entries """
+        uri = "https://uri.com"
+        manifest = {"taskdata_uri": uri}
+        body = []
+
+        self.register_http_response(uri, manifest, body)
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            basemodels.validate_manifest_uris(manifest)
+
+    def test_taskdata_invalid_format(self):
+        """ should raise if taskdata_uri contains object instead of array """
+        uri = "https://uri.com"
+        manifest = {"taskdata_uri": uri}
+        body = {"key": [1, 2, 3]}
+
+        self.register_http_response(uri, manifest, body)
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            basemodels.validate_manifest_uris(manifest)
+
+    def test_taskdata_uri_valid(self):
+        uri = "https://uri.com"
+        manifest = {"taskdata_uri": uri}
+        body = [{
+            "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
+            "datapoint_uri": "https://domain.com/file1.jpg",
+            "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
+        },
+                {
+                    "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
+                    "datapoint_uri": "https://domain.com/file2.jpg",
+                    "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
+                }]
+
+        self.register_http_response(uri, manifest, body)
+
+        basemodels.validate_manifest_uris(manifest)
+
+    def test_taskdata_uri_invalid(self):
+        uri = "https://uri.com"
+        manifest = {"taskdata_uri": uri}
+        body = [{"task_key": "not_uuid", "datapoint_uri": "not_uri"}]
+
+        self.register_http_response(uri, manifest, body)
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            basemodels.validate_manifest_uris(manifest)
+
+    def test_groundtruth_and_taskdata_valid(self):
+        taskdata_uri = "https://td.com"
+        groundtruth_uri = "https://gt.com"
+        manifest = {
+            "taskdata_uri": taskdata_uri,
+            "groundtruth_uri": groundtruth_uri,
+            "request_type": "image_label_binary"
+        }
+
+        taskdata = [{
+            "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
+            "datapoint_uri": "https://domain.com/file1.jpg",
+            "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
+        },
+                    {
+                        "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
+                        "datapoint_uri": "https://domain.com/file2.jpg",
+                        "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
+                    }]
+
+        groundtruth = {
+            "https://domain.com/123/file1.jpeg": ["false", "false", "false"],
+            "https://domain.com/456/file2.jpeg": ["false", "true", "false"],
+        }
+
+        self.register_http_response(taskdata_uri, manifest, taskdata)
+        self.register_http_response(groundtruth_uri, manifest, groundtruth)
+
+        basemodels.validate_manifest_uris(manifest)
 
 
 if __name__ == "__main__":

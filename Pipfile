@@ -6,10 +6,12 @@ verify_ssl = true
 [dev-packages]
 yapf = "==0.25.0"
 mypy = "==0.670"
+httpretty = "*"
 
 [packages]
 schematics = "*"
 marshmallow = "*"
+requests = "*"
 
 [requires]
 python_version = "3.6"
