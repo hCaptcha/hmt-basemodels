@@ -1,7 +1,12 @@
 import uuid
+import requests
+from typing import Dict, Callable, Any
 from schematics.models import Model, ValidationError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
     UUIDType, ModelType, BooleanType, UnionType, NumberType
+
+from .groundtruth import get_groundtruth_model
+from .taskdata import get_taskdata_model
 
 BASE_JOB_TYPES = [
     "image_label_binary",
@@ -239,3 +244,32 @@ class Manifest(Model):
     validate_taskdata = validate_taskdata_uri
 
     webhook = ModelType(Webhook)
+
+
+def validate_manifest_uris(manifest: dict):
+    """ Fetch & validate manifest's remote objects """
+
+    uri_models: Dict[str, Callable[..., Model]] = {
+        "groundtruth_uri": get_groundtruth_model,
+        "taskdata_uri": get_taskdata_model
+    }
+
+    for uri_key, get_model in uri_models.items():
+        uri = manifest.get(uri_key)
+
+        if uri is None:
+            continue
+
+        response = requests.get(uri)
+        response.raise_for_status()
+
+        model = get_model(data=response.json(), request_type=manifest.get('request_type'))
+
+        if model is not None:
+            model.validate()
+
+    multi_challenge_manifests = manifest.get('multi_challenge_manifests')
+
+    if multi_challenge_manifests is not None:
+        for nested_manifest in multi_challenge_manifests:
+            validate_manifest_uris(nested_manifest)
