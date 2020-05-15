@@ -12,6 +12,7 @@ httpretty = "*"
 schematics = "*"
 marshmallow = "*"
 requests = "*"
+ijson = "*"
 
 [requires]
 python_version = "3.6"

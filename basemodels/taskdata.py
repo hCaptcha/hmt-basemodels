@@ -1,14 +1,8 @@
-from schematics.models import Model
+from schematics.models import Model, ValidationError
 from schematics.types import ListType, ModelType, UUIDType, URLType, StringType
 
 
-class TaskData(Model):
-    task_key = UUIDType(required=True)
-    datapoint_uri = URLType(required=True, min_length=10)
-    datapoint_hash = StringType(required=True, min_length=10)
-
-
-class TaskDataList(Model):
+class TaskDataEntry(Model):
     """
     Taskdata file format:
 
@@ -25,8 +19,14 @@ class TaskDataList(Model):
       }
     ]
     """
-    items = ListType(ModelType(TaskData))
+    task_key = UUIDType()
+    datapoint_uri = URLType(required=True, min_length=10)
+    datapoint_hash = StringType()
 
 
-def get_taskdata_model(data: list, **kwargs) -> TaskDataList:
-    return TaskDataList({"items": data})
+def validate_taskdata_entry(value: dict):
+    """ Validate taskdata entry """
+    if not isinstance(value, dict):
+        raise ValidationError("taskdata entry should be dict")
+
+    TaskDataEntry(value).validate()

@@ -1,64 +1,54 @@
 from typing import Union
 from schematics.models import Model
-from schematics.types import StringType, ListType, URLType, BaseType, ModelType, IntType, FloatType, DictType, UnionType
+from schematics.types import StringType, ListType, URLType, ModelType, IntType, FloatType, UnionType
+
+groundtruth_entry_key_type = URLType()
+
+"""
+Groundtruth file format for `image_label_binary` job type:
+
+{
+  "https://domain.com/file1.jpeg": ["false", "false", "false"],
+  "https://domain.com/file2.jpeg": ["true", "true", "true"]
+}
+"""
+ilb_groundtruth_entry_type = ListType(StringType(choices=["true", "false"]))
+
+class ILASGroundtruthEntry(Model):
+    entity_name = UnionType([IntType, FloatType])
+    entity_type = StringType()
+    entity_coords = ListType(UnionType([IntType, FloatType]))
+
+"""
+Groundtruth file format for `image_label_area_select` job type
+
+{
+  "https://domain.com/file1.jpeg": [
+    [
+      {
+        "entity_name": 0,
+        "entity_type": "gate",
+        "entity_coords": [275, 184, 454, 183, 453, 366, 266, 367]
+      }
+    ]
+  ]
+}
+"""
+ilas_groundtruth_entry_type = ListType(ListType(ModelType(ILASGroundtruthEntry)))
+
+groundtruth_entry_types_map = {
+  "image_label_binary": ilb_groundtruth_entry_type,
+  "image_label_area_select": ilas_groundtruth_entry_type,
+}
+
+def validate_groundtruth_entry(key: str, value: Union[dict, list], request_type: str):
+    """ Validate key & value of groundtruth entry based on request_type """
+    groundtruth_entry_type = groundtruth_entry_types_map.get(request_type)
+
+    if groundtruth_entry_type is None:
+      return
+
+    groundtruth_entry_key_type.validate(key)
+    groundtruth_entry_type.validate(value)
 
 
-class ILBGroundtruth(Model):
-    """
-    Groundtruth file format for `image_label_binary` job type:
-
-    {
-      "https://domain.com/file1.jpeg": ["false", "false", "false"],
-      "https://domain.com/file2.jpeg": ["true", "true", "true"]
-    }
-    """
-    items = BaseType()
-
-    def validate_items(self, data, value):
-        for k, v in value.items():
-            URLType().validate(k)
-            ListType(StringType(choices=["true", "false"])).validate(v)
-
-
-class ILASGroundtruthDatapoint(Model):
-    coords = ListType(UnionType([IntType, FloatType]))
-
-
-class ILASGroundtruth(Model):
-    """
-    Groundtruth file format for `image_label_area_select` job type
-
-    {
-      "datapoints": [
-        {
-          "https://domain.com/file1.jpeg": {
-            "coords": [303, 183]
-          }
-        },
-        {
-          "https://domain.com/file1.jpeg": {
-            "coords": [361, 239]
-          }
-        }
-      ]
-    }
-    """
-    datapoints = ListType(DictType(ModelType(ILASGroundtruthDatapoint)), required=True)
-
-    def validate_datapoints(self, data, value):
-        for datapoint in value:
-            for key in datapoint.keys():
-                URLType().validate(key)
-
-
-def get_groundtruth_model(data: Union[dict, list], request_type: str,
-                          **kwargs) -> Union[None, ILBGroundtruth, ILASGroundtruth]:
-    """
-    Create appropriate groundtruth model based on request_type
-    """
-    if request_type == 'image_label_binary':
-        return ILBGroundtruth({"items": data})
-    elif request_type == 'image_label_area_select':
-        return ILASGroundtruth(data)
-
-    return None

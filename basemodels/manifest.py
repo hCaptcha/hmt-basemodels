@@ -5,8 +5,9 @@ from schematics.models import Model, ValidationError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
     UUIDType, ModelType, BooleanType, UnionType, NumberType
 
-from .groundtruth import get_groundtruth_model
-from .taskdata import get_taskdata_model
+from .streaming_json import traverse_json_uri
+from .groundtruth import validate_groundtruth_entry
+from .taskdata import validate_taskdata_entry
 
 BASE_JOB_TYPES = [
     "image_label_binary",
@@ -249,27 +250,20 @@ class Manifest(Model):
 def validate_manifest_uris(manifest: dict):
     """ Fetch & validate manifest's remote objects """
 
-    uri_models: Dict[str, Callable[..., Model]] = {
-        "groundtruth_uri": get_groundtruth_model,
-        "taskdata_uri": get_taskdata_model
+    request_type = manifest.get('request_type')
+
+    entry_validators = {
+        "groundtruth_uri": lambda v, k: validate_groundtruth_entry(k, v, request_type),
+        "taskdata_uri": lambda v, _: validate_taskdata_entry(v)
     }
 
-    for uri_key, get_model in uri_models.items():
+    for uri_key, validate_entry in entry_validators.items():
         uri = manifest.get(uri_key)
 
         if uri is None:
             continue
 
-        response = requests.get(uri)
-        response.raise_for_status()
+        entries_count = traverse_json_uri(uri, validate_entry)
 
-        model = get_model(data=response.json(), request_type=manifest.get('request_type'))
-
-        if model is not None:
-            model.validate()
-
-    multi_challenge_manifests = manifest.get('multi_challenge_manifests')
-
-    if multi_challenge_manifests is not None:
-        for nested_manifest in multi_challenge_manifests:
-            validate_manifest_uris(nested_manifest)
+        if entries_count == 0:
+            raise ValidationError(f"fetched {uri_key} is empty")

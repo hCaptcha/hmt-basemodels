@@ -415,157 +415,6 @@ class ViaTest(unittest.TestCase):
         self.assertIn('dog', parsed['datapoints'][0]['class_attributes'])
 
 
-class GetGroundtruthModelTest(unittest.TestCase):
-    def test_get_groundtruth_model_unknown(self):
-        """ should return None for unknown request_type """
-        model = basemodels.get_groundtruth_model({}, '')
-        self.assertIsNone(model)
-
-    def test_get_groundtruth_model_ilas(self):
-        """ should return ILASGroundtruth for image_label_area_select """
-        model = basemodels.get_groundtruth_model({}, 'image_label_area_select')
-        self.assertIsInstance(model, basemodels.ILASGroundtruth)
-
-    def test_get_groundtruth_model_ilb(self):
-        """ should return ILBGroundtruth for image_label_binary """
-        model = basemodels.get_groundtruth_model({}, 'image_label_binary')
-        self.assertIsInstance(model, basemodels.ILBGroundtruth)
-
-
-class ILBGroundtruthTest(unittest.TestCase):
-    def validate_gt(self, data):
-        basemodels.get_groundtruth_model(data, 'image_label_binary').validate()
-
-    def test_ilb_gt_valid(self):
-        """ should not raise for valid gt format """
-        gt = {
-            "https://domain.com/123/file1.jpeg": ["false", "false", "false"],
-            "https://domain.com/456/file2.jpeg": ["false", "true", "false"],
-        }
-
-        self.validate_gt(gt)
-
-    def test_ilb_gt_invalid_keys(self):
-        """ should raise DataError for invalid url key """
-        gt = {
-            "not_url": ["false", "false", "false"],
-            "https://domain.com/456/file2.jpeg": ["false", "true", "false"],
-        }
-
-        with self.assertRaises(schematics.exceptions.DataError):
-            self.validate_gt(gt)
-
-    def test_ilb_gt_invalid_list_values(self):
-        """ should raise CompoundError for invalid values """
-        gt = {
-            "https://domain.com/456/file2.jpeg": [False, True, 1],
-        }
-
-        with self.assertRaises(schematics.exceptions.CompoundError):
-            self.validate_gt(gt)
-
-
-class ILASGroundtruthDatapointTest(unittest.TestCase):
-    def validate_gt(self, data):
-        basemodels.get_groundtruth_model(data, 'image_label_area_select').validate()
-
-    def test_ilas_gt_valid(self):
-        """ should not raise for valid gt format """
-        gt = {
-            "datapoints": [{
-                "https://domain.com/file1.jpeg": {
-                    "coords": [303, 183]
-                }
-            }, {
-                "https://domain.com/file1.jpeg": {
-                    "coords": [361, 239]
-                }
-            }]
-        }
-
-        self.validate_gt(gt)
-
-    def test_ilas_gt_invalid_keys(self):
-        """ should raise DataError for invalid url key """
-        gt = {
-            "datapoints": [{
-                "not_url": {
-                    "coords": [303, 183]
-                }
-            }, {
-                "https://domain.com/file1.jpeg": {
-                    "coords": [361, 239]
-                }
-            }]
-        }
-
-        with self.assertRaises(schematics.exceptions.DataError):
-            self.validate_gt(gt)
-
-    def test_ilas_gt_invalid_values(self):
-        """ should raise DataError for invalid value """
-        gt = {"datapoints": [{"https://domain.com/file1.jpeg": 1}]}
-
-        with self.assertRaises(schematics.exceptions.DataError):
-            self.validate_gt(gt)
-
-
-class GetTaskDataModelTest(unittest.TestCase):
-    def test_get_taskdata_model(self):
-        """ should return TaskDataList model """
-        model = basemodels.get_taskdata_model([])
-        self.assertIsInstance(model, basemodels.TaskDataList)
-
-
-class TaskDataListTest(unittest.TestCase):
-    def validate_taskdata(self, data):
-        basemodels.get_taskdata_model(data).validate()
-
-    def test_taskdata_valid(self):
-        """ should not raise for valid taskdata format """
-        data = [{
-            "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
-            "datapoint_uri": "https://domain.com/file1.jpg",
-            "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-        },
-                {
-                    "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
-                    "datapoint_uri": "https://domain.com/file2.jpg",
-                    "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-                }]
-
-        self.validate_taskdata(data)
-
-    def test_taskdata_invalid_uuid(self):
-        """ should raise for invalid task_key """
-        data = [{
-            "task_key": "not_uuid",
-            "datapoint_uri": "https://domain.com/file2.jpg",
-            "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-        }]
-
-        with self.assertRaises(schematics.exceptions.DataError):
-            self.validate_taskdata(data)
-
-    def test_taskdata_invalid_uri(self):
-        """ should raise for invalid datapoint_uri """
-        data = [{
-            "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
-            "datapoint_uri": "not_url",
-            "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-        }]
-
-        with self.assertRaises(schematics.exceptions.DataError):
-            self.validate_taskdata(data)
-
-    def test_taskdata_missing_fields(self):
-        """ should raise for missing fields """
-        data = [{}]
-
-        with self.assertRaises(schematics.exceptions.DataError):
-            self.validate_taskdata(data)
-
-
 @httpretty.activate
 class TestValidateManifestUris(unittest.TestCase):
     def register_http_response(self, uri="https://uri.com", manifest=None, body=None):
@@ -595,7 +444,40 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.register_http_response(uri, manifest, body)
 
-        with self.assertRaises(schematics.exceptions.DataError):
+        with self.assertRaises(schematics.exceptions.BaseError):
+            basemodels.validate_manifest_uris(manifest)
+
+    def test_groundtruth_uri_invalid_format(self):
+        """ should raise if groundtruth_uri contains array instead of object """
+        uri = "https://uri.com"
+        manifest = {"groundtruth_uri": uri, "request_type": "image_label_binary"}
+        body = [{"key": "value"}]
+
+        self.register_http_response(uri, manifest, body)
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            basemodels.validate_manifest_uris(manifest)
+
+    def test_empty_taskdata(self):
+        """ should raise if taskdata_uri contains no entries """
+        uri = "https://uri.com"
+        manifest = {"taskdata_uri": uri}
+        body = []
+
+        self.register_http_response(uri, manifest, body)
+
+        with self.assertRaises(schematics.exceptions.BaseError):
+            basemodels.validate_manifest_uris(manifest)
+
+    def test_taskdata_invalid_format(self):
+        """ should raise if taskdata_uri contains object instead of array """
+        uri = "https://uri.com"
+        manifest = {"taskdata_uri": uri}
+        body = {"key": [1, 2, 3]}
+
+        self.register_http_response(uri, manifest, body)
+
+        with self.assertRaises(schematics.exceptions.BaseError):
             basemodels.validate_manifest_uris(manifest)
 
     def test_taskdata_uri_valid(self):
@@ -623,32 +505,7 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.register_http_response(uri, manifest, body)
 
-        with self.assertRaises(schematics.exceptions.DataError):
-            basemodels.validate_manifest_uris(manifest)
-
-    def test_multi_challenge_manifests_valid(self):
-        uri = "https://uri.com"
-        manifest = {"multi_challenge_manifests": [{"taskdata_uri": uri}]}
-        body = [{
-            "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
-            "datapoint_uri": "https://domain.com/file1.jpg",
-            "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-        }]
-
-        self.register_http_response(uri, manifest, body)
-
-        basemodels.validate_manifest_uris(manifest)
-
-    def test_multi_challenge_manifests_invalid(self):
-        uri = "https://uri.com"
-        manifest = {"multi_challenge_manifests": [{"taskdata_uri": uri}]}
-        body = [{
-            "datapoint_uri": 5,
-        }]
-
-        self.register_http_response(uri, manifest, body)
-
-        with self.assertRaises(schematics.exceptions.DataError):
+        with self.assertRaises(schematics.exceptions.BaseError):
             basemodels.validate_manifest_uris(manifest)
 
 
