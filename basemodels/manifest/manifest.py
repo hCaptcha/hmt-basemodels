@@ -5,8 +5,8 @@ from schematics.models import Model, ValidationError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
     UUIDType, ModelType, BooleanType, UnionType, NumberType
 
-from .groundtruth import validate_groundtruth_entry
-from .taskdata import validate_taskdata_entry
+from .data.groundtruth import validate_groundtruth_entry
+from .data.taskdata import validate_taskdata_entry
 
 BASE_JOB_TYPES = [
     "image_label_binary",
@@ -247,6 +247,15 @@ class Manifest(Model):
 
 
 def traverse_json_entries(data: Any, callback: Callable) -> int:
+    """
+    Traverse json and execute callback for each top-level entry
+
+    Could later be optimized by accepting json uri instead of the full object
+    and using streaming request/parse APIs to exit early on validation error
+
+    Returns entries count if succeeded
+    """
+
     entries_count = 0
 
     if isinstance(data, dict):
