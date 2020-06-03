@@ -1,7 +1,9 @@
 import uuid
 import requests
+from requests.exceptions import RequestException
 from typing import Dict, Callable, Any, Union
 from schematics.models import Model, ValidationError
+from schematics.exceptions import BaseError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
     UUIDType, ModelType, BooleanType, UnionType, NumberType
 
@@ -287,10 +289,13 @@ def validate_manifest_uris(manifest: dict):
         if uri is None:
             continue
 
-        response = requests.get(uri)
-        response.raise_for_status()
+        try:
+            response = requests.get(uri)
+            response.raise_for_status()
 
-        entries_count = traverse_json_entries(response.json(), validate_entry)
+            entries_count = traverse_json_entries(response.json(), validate_entry)
+        except (BaseError, RequestException) as e:
+            raise ValidationError(f"{uri_key} validation failed: {e}") from e
 
         if entries_count == 0:
             raise ValidationError(f"fetched {uri_key} is empty")
