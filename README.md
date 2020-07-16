@@ -66,4 +66,4 @@ Open an issue!
 
 ## License
 
-MIT © HUMAN Protocol (IMI) 2020
+MIT © HUMAN Protocol 2020
