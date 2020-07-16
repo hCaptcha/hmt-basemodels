@@ -62,8 +62,8 @@ In root folder
 
 ## Have a question?
 
-Join our [Telegram](https://t.me/hcaptchachat) channel, we will gladly answer your questions.
+Open an issue!
 
 ## License
 
-MIT © HUMAN Protocol
+MIT © HUMAN Protocol (IMI) 2020
