@@ -585,6 +585,29 @@ class TestValidateManifestUris(unittest.TestCase):
 
         basemodels.validate_manifest_uris(manifest)
 
+    def test_mitl_in_internal_config(self):
+        """ Test that mitl config can be part of the internal configuration """
+        model = a_manifest().to_primitive()
+        mitl_config = {
+            "n_gt": 200,
+            "min_tasks_in_job": 1000,
+            "n_gt_sample_min": 1,
+            "n_gt_sample_max": 3,
+            "task_max_repeats": 25,
+            "max_tasks_in_job": 36000,
+            "model_id": "ResNext50_32x4d",
+            "task_selection_id": "MinMargin",
+            "requester_min_repeats": 12,
+            "requester_max_repeats": 25,
+            "stop_n_active": 1000,
+            "requester_accuracy_target": 0.8
+        }
+
+        model["internal_config"] = {**model["internal_config"], "mitl": mitl_config}
+        manifest = basemodels.Manifest(model)
+        manifest.validate()
+        self.assertTrue(True)
+
 
 if __name__ == "__main__":
     logging.basicConfig()

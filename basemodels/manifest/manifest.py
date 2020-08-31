@@ -85,6 +85,7 @@ class InternalConfig(Model):
     reco = DictType(StringType, UnionType([StringType, IntType, FloatType]))
     repo = DictType(StringType, UnionType([StringType, IntType, FloatType]))
     other = DictType(StringType, UnionType([StringType, IntType, FloatType]))
+    mitl = DictType(StringType, UnionType([StringType, IntType, FloatType]))
 
 
 class NestedManifest(Model):
