@@ -600,7 +600,11 @@ class TestValidateManifestUris(unittest.TestCase):
             "requester_min_repeats": 12,
             "requester_max_repeats": 25,
             "stop_n_active": 1000,
-            "requester_accuracy_target": 0.8
+            "requester_accuracy_target": 0.8,
+            "nested_config": {
+                "value_a": 1,
+                "value_b": 2
+            }
         }
 
         model["internal_config"] = {**model["internal_config"], "mitl": mitl_config}
