@@ -3,4 +3,4 @@ set -exu
 
 cd $(dirname $0)/..
 docker-compose build
-docker-compose run basemodels bash
+docker-compose run --rm basemodels bash
