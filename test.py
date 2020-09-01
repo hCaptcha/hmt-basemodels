@@ -607,7 +607,7 @@ class TestValidateManifestUris(unittest.TestCase):
             }
         }
 
-        model["internal_config"] = {**model["internal_config"], "mitl": mitl_config}
+        model["internal_config"]["mitl"] = mitl_config
         manifest = basemodels.Manifest(model)
         manifest.validate()
         self.assertTrue(True)
