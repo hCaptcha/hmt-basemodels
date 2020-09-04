@@ -1,0 +1,6 @@
+#!/bin/bash
+set -exu
+
+cd $(dirname $0)/..
+docker-compose build
+docker-compose run --rm basemodels bash

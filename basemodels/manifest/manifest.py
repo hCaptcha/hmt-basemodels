@@ -5,7 +5,7 @@ from typing import Dict, Callable, Any, Union
 from schematics.models import Model, ValidationError
 from schematics.exceptions import BaseError
 from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
-    UUIDType, ModelType, BooleanType, UnionType, NumberType
+    UUIDType, ModelType, BooleanType, UnionType, NumberType, BaseType
 
 from .data.groundtruth import validate_groundtruth_entry
 from .data.taskdata import validate_taskdata_entry
@@ -85,6 +85,17 @@ class InternalConfig(Model):
     reco = DictType(StringType, UnionType([StringType, IntType, FloatType]))
     repo = DictType(StringType, UnionType([StringType, IntType, FloatType]))
     other = DictType(StringType, UnionType([StringType, IntType, FloatType]))
+    # Accept one layer of nested
+    mitl = DictType(
+        UnionType(
+            [
+                StringType,
+                IntType,
+                FloatType,
+                DictType(UnionType([StringType, IntType, FloatType])),
+            ]
+        )
+    )
 
 
 class NestedManifest(Model):
