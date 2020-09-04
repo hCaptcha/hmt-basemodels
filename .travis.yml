@@ -10,6 +10,8 @@ script:
 - "./bin/ci"
 
 deploy:
+  skip_cleanup: true
+  skip_existing: true
   provider: pypi
   user: dev-im
   # This edge argument is intended to work around issue:
