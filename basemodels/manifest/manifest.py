@@ -130,7 +130,7 @@ class NestedManifest(Model):
 
     request_type: Optional[BaseJobTypesEnum]
 
-    @validator("request_type", always=True)
+    @validator("request_type")
     def validate_request_type(cls, value, values, **kwargs):
         """
         validate request types for all types of challenges
@@ -166,10 +166,9 @@ class NestedManifest(Model):
     requester_max_repeats: int = 100
     requester_min_repeats: int = 1
     requester_question: Optional[Dict[str, str]]
-    #TODO: see manifest.py:L129
     requester_question_example: Optional[Union[HttpUrl, List[HttpUrl]]]
     
-    @validator('requester_question_example', always=True)
+    @validator('requester_question_example')
     def validate_requester_question_example(cls, value, values, **kwargs):
         # validation runs before other params, so need to handle missing case
         if not ("request_type" in values):
@@ -203,6 +202,9 @@ class NestedManifest(Model):
     webhook: Optional[Webhook]
     class Config:
                 arbitrary_types_allowed = True
+                json_encoders = {
+                            UUID: lambda v: str(v.id),
+                }
 class Manifest(Model):
     """ The manifest description. """
     job_mode: Optional[Literal["batch", "online", "instant_delivery"]]
@@ -212,23 +214,21 @@ class Manifest(Model):
     job_total_tasks: Optional[int]
     request_type: Optional[BaseJobTypesEnum2]
 
-    @validator("request_type", always=True)
-    def validate_request_type(cls, value, values, **kwargs):
-        """
-        validate request types for all types of challenges
-        multi_challenge should always have multi_challenge_manifests
-        """
-
-        if value == BaseJobTypesEnum2.multi_challenge:
-            if not "multi_challenge_manifests" in values:
-                raise ValidationError("multi_challenge requires multi_challenge_manifests.")
-        elif value in [BaseJobTypesEnum2.image_label_area_select, BaseJobTypesEnum2.image_label_binary]:
-            if values.get('multiple_choice_min_choices', 1) > values.get('multiple_choice_max_choices', 1):
-                raise ValidationError(
-                    "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
-
-        return value
-
+ #   @validator("request_type")
+ #   def validate_request_type(cls, value, values, **kwargs):
+ #       """
+ #       validate request types for all types of challenges
+ #       multi_challenge should always have multi_challenge_manifests
+ #       """
+ #       if value == BaseJobTypesEnum2.multi_challenge:
+ #           if not "multi_challenge_manifests" in values:
+ #               raise ValidationError("multi_challenge requires multi_challenge_manifests.")
+ #       elif value in [BaseJobTypesEnum2.image_label_area_select, BaseJobTypesEnum2.image_label_binary]:
+ #           if values.get('multiple_choice_min_choices', 1) > values.get('multiple_choice_max_choices', 1):
+ #               raise ValidationError(
+ #                   "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
+ #
+ #       return value
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 
     @validator('requester_restricted_answer_set', always=True) 
@@ -251,7 +251,7 @@ class Manifest(Model):
 
     requester_question_example: Optional[Union[HttpUrl, List[HttpUrl]]]
 
-    @validator('requester_question_example', always=True)
+    @validator('requester_question_example')
     def validate_requester_question_example(cls, value, values, **kwargs):
         # validation runs before other params, so need to handle missing case
         if not ("request_type" in values):
@@ -322,9 +322,12 @@ class Manifest(Model):
     validate_taskdata = validator('taskdata', allow_reuse=True, always=True)(validate_taskdata_uri) 
 
     webhook: Optional[Webhook]
+
     class Config:
                 arbitrary_types_allowed = True
-
+                json_encoders = {
+                            UUID: lambda v: str(v.hex),
+                        }
 def traverse_json_entries(data: Any, callback: Callable) -> int:
     """
     Traverse json and execute callback for each top-level entry

@@ -51,6 +51,13 @@ def create_webhook(data: dict):
         return schematics_basemodels.Webhook(data)
     return basemodels.Webhook.construct(**data)
 
+# Json serializer for models based on library
+def to_json(model):
+    if test_mode == SCHEMATICS:
+        return json.dumps(model.to_primitive())
+    
+    # Pydantic json serializer
+    return model.json()
 
 # Some helper functions for providing validatation function based on model library
 def validate_func(model):
@@ -153,7 +160,7 @@ class ManifestTest(unittest.TestCase):
 
     def test_can_serialize(self):
         """ validate that we can dump this to json in downstream services """
-        j = json.dumps(a_manifest().to_primitive())
+        j = to_json(a_manifest())
 
     def test_can_fail_toconstruct(self):
         """Tests that the manifest raises an Error when called with falsy parameters."""
