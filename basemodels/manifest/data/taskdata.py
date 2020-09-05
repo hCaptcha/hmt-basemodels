@@ -1,13 +1,8 @@
-try:
-            from typing import Literal
-except ImportError:
-            # For python version < 3.8
-            from typing_extensions import Literal
+from typing_extensions import Literal
 from typing import Dict, Callable, Any, Union, Type, ClassVar 
-from pydantic import BaseModel,HttpUrl,UUID4, stricturl, constr, validate_model, ValidationError
-from enum import Enum
+from pydantic import BaseModel, HttpUrl, validate_model, ValidationError
 from uuid import UUID
-from typing import List, Optional
+from typing import Optional
 
 class TaskDataEntry(BaseModel):
     """
@@ -27,7 +22,7 @@ class TaskDataEntry(BaseModel):
     ]
     """
     task_key: UUID
-    datapoint_uri: stricturl(min_length=10)
+    datapoint_uri: HttpUrl
     datapoint_hash: Optional[str]
 
 

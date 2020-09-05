@@ -51,13 +51,15 @@ def create_webhook(data: dict):
         return schematics_basemodels.Webhook(data)
     return basemodels.Webhook.construct(**data)
 
+
 # Json serializer for models based on library
 def to_json(model):
     if test_mode == SCHEMATICS:
         return json.dumps(model.to_primitive())
-    
+
     # Pydantic json serializer
     return model.json()
+
 
 # Some helper functions for providing validatation function based on model library
 def validate_func(model):

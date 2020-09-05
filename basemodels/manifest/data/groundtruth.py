@@ -1,8 +1,4 @@
-try:
-        from typing import Literal
-except ImportError:
-        # For python version < 3.8
-        from typing_extensions import Literal
+from typing_extensions import Literal
 from typing import Dict, Callable, Any, Union, Type, ClassVar 
 from pydantic import BaseModel,HttpUrl,UUID4, stricturl, constr, validate_model
 from enum import Enum
