@@ -1,8 +1,15 @@
-from schematics.models import Model, ValidationError
-from schematics.types import ListType, ModelType, UUIDType, URLType, StringType
+try:
+            from typing import Literal
+except ImportError:
+            # For python version < 3.8
+            from typing_extensions import Literal
+from typing import Dict, Callable, Any, Union, Type, ClassVar 
+from pydantic import BaseModel,HttpUrl,UUID4, stricturl, constr, validate_model, ValidationError
+from enum import Enum
+from uuid import UUID
+from typing import List, Optional
 
-
-class TaskDataEntry(Model):
+class TaskDataEntry(BaseModel):
     """
     Taskdata file format:
 
@@ -19,14 +26,16 @@ class TaskDataEntry(Model):
       }
     ]
     """
-    task_key = UUIDType()
-    datapoint_uri = URLType(required=True, min_length=10)
-    datapoint_hash = StringType()
+    task_key: UUID
+    datapoint_uri: stricturl(min_length=10)
+    datapoint_hash: Optional[str]
 
 
 def validate_taskdata_entry(value: dict):
     """ Validate taskdata entry """
     if not isinstance(value, dict):
-        raise ValidationError("taskdata entry should be dict")
+        raise ValidationError("taskdata entry should be dict", TaskDataEntry())
 
-    TaskDataEntry(value).validate()
+    *_, validation_error = validate_model(TaskDataEntry, value)
+    if validation_error:
+          raise validation_error

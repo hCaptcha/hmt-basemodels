@@ -1,32 +1,20 @@
-try:
-        from typing import Literal
-except ImportError:
-        # For python version < 3.8
-        from typing_extensions import Literal
-from typing import Dict, Callable, Any, Union, Type, ClassVar 
-from pydantic import BaseModel,HttpUrl,UUID4, stricturl, constr, validate_model
-from enum import Enum
-from uuid import UUID
-from typing import List, Optional
-from typing import Generic, TypeVar, Optional, List
-from pydantic.generics import GenericModel
+from typing import Union
+from schematics.models import Model
+from schematics.types import StringType, ListType, URLType, ModelType, IntType, FloatType, UnionType
 
-
-DataT = TypeVar('DataT')
-class WrapperModel(GenericModel, Generic[DataT]):
-        data: Optional[DataT]
-        class Config:
-                arbitrary_types_allowed = True
 
 def create_wrapper_model(type):
-    return WrapperModel[type]
+    class WrapperModel(Model):
+        data = type
+
+    return WrapperModel
+
 
 def validate_wrapper_model(Model, data):
-    *_, validation_error = validate_model(Model, {"data": data})
-    if validation_error:
-          raise validation_error
+    Model({"data": data}).validate()
 
-groundtruth_entry_key_type = HttpUrl
+
+groundtruth_entry_key_type = URLType()
 GroundtruthEntryKeyModel = create_wrapper_model(groundtruth_entry_key_type)
 """
 Groundtruth file format for `image_label_binary` job type:
@@ -36,7 +24,7 @@ Groundtruth file format for `image_label_binary` job type:
   "https://domain.com/file2.jpeg": ["true", "true", "true"]
 }
 """
-ilb_groundtruth_entry_type = List[Literal["true", "false"]]
+ilb_groundtruth_entry_type = ListType(StringType(choices=["true", "false"]))
 ILBGroundtruthEntryModel = create_wrapper_model(ilb_groundtruth_entry_type)
 """
 Groundtruth file format for `image_label_multiple_choice` job type:
@@ -54,14 +42,14 @@ Groundtruth file format for `image_label_multiple_choice` job type:
   ]
 }
 """
-ilmc_groundtruth_entry_type = List[List[str]]
+ilmc_groundtruth_entry_type = ListType(ListType(StringType))
 ILMCGroundtruthEntryModel = create_wrapper_model(ilmc_groundtruth_entry_type)
 
 
-class ILASGroundtruthEntry(BaseModel):
-    entity_name: Union[int, float]
-    entity_type: str
-    entity_coords: List[Union[int, float]]
+class ILASGroundtruthEntry(Model):
+    entity_name = UnionType([IntType, FloatType])
+    entity_type = StringType()
+    entity_coords = ListType(UnionType([IntType, FloatType]))
 
 
 """
@@ -79,7 +67,7 @@ Groundtruth file format for `image_label_area_select` job type
   ]
 }
 """
-ilas_groundtruth_entry_type = List[List[ILASGroundtruthEntry]]
+ilas_groundtruth_entry_type = ListType(ListType(ModelType(ILASGroundtruthEntry)))
 ILASGroundtruthEntryModel = create_wrapper_model(ilas_groundtruth_entry_type)
 
 groundtruth_entry_models_map = {

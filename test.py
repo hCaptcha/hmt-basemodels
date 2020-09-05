@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-
+from pydantic import BaseModel, ValidationError, validator
 import logging
 import os
 import sys
 import schematics
 import basemodels
+# Add support for the old schematics based manifest model
+import basemodels.support.schematics as schematics_basemodels
 import unittest
 import httpretty
 import json
@@ -17,6 +19,50 @@ REP_ORACLE = "0x61F9F0B31eacB420553da8BCC59DC617279731Ac"
 REC_ORACLE = "0xD979105297fB0eee83F7433fC09279cb5B94fFC6"
 FAKE_ORACLE = "0x1413862c2b7054cdbfdc181b83962cb0fc11fd92"
 
+# Test both version of models
+SCHEMATICS = "shematics"
+PYDANTIC = "pydantic"
+test_modes = {SCHEMATICS: schematics_basemodels, PYDANTIC: basemodels}
+
+# Library related errors
+validation_base_errors = {SCHEMATICS: schematics.exceptions.BaseError, PYDANTIC: ValidationError}
+
+# Library related errors
+validation_data_errors = {SCHEMATICS: schematics.exceptions.DataError, PYDANTIC: ValidationError}
+
+
+# Some helper functions for create manifest models based on model library
+def create_manifest(data: dict):
+    if test_mode == SCHEMATICS:
+        return schematics_basemodels.Manifest(data)
+    return basemodels.Manifest.construct(**data)
+
+
+# Some helper functions for create nested manifest models based on model library
+def create_nested_manifest(data: dict):
+    if test_mode == SCHEMATICS:
+        return schematics_basemodels.NestedManifest(data)
+    return basemodels.NestedManifest.construct(**data)
+
+
+# Some helper functions for create nested manifest models based on model library
+def create_webhook(data: dict):
+    if test_mode == SCHEMATICS:
+        return schematics_basemodels.Webhook(data)
+    return basemodels.Webhook.construct(**data)
+
+
+# Some helper functions for providing validatation function based on model library
+def validate_func(model):
+    if test_mode == SCHEMATICS:
+        return model.validate
+    return model.check
+
+
+# To be changed in runtime
+test_mode = SCHEMATICS
+test_models = schematics_basemodels
+
 
 def a_manifest(number_of_tasks=100,
                bid_amount=1.0,
@@ -26,7 +72,7 @@ def a_manifest(number_of_tasks=100,
                request_type=IMAGE_LABEL_BINARY,
                request_config=None,
                job_mode='batch',
-               multi_challenge_manifests=None) -> basemodels.Manifest:
+               multi_challenge_manifests=None) -> test_models.Manifest:
     internal_config = {'exchange': {'a': 1, 'b': 'c'}}
     model = {
         'requester_restricted_answer_set': {
@@ -64,14 +110,14 @@ def a_manifest(number_of_tasks=100,
     if request_config:
         model.update({'request_config': request_config})
 
-    manifest = basemodels.Manifest(model)
-    manifest.validate()
-
+    manifest = create_manifest(model)
+    validate_func(manifest)()
     return manifest
 
 
-def a_nested_manifest(request_type=IMAGE_LABEL_BINARY, minimum_trust=.1,
-                      request_config=None) -> basemodels.Manifest:
+def a_nested_manifest(request_type=IMAGE_LABEL_BINARY,
+                      minimum_trust=.1,
+                      request_config=None) -> test_models.Manifest:
     model = {
         'requester_restricted_answer_set': {
             '0': {
@@ -93,15 +139,14 @@ def a_nested_manifest(request_type=IMAGE_LABEL_BINARY, minimum_trust=.1,
     if request_config:
         model.update({'request_config': request_config})
 
-    manifest = basemodels.NestedManifest(model)
-    manifest.validate()
+    manifest = create_nested_manifest(model)
+    validate_func(manifest)()
 
     return manifest
 
 
 class ManifestTest(unittest.TestCase):
     """Manifest specific tests, validating that models work the way we want"""
-
     def test_basic_construction(self):
         """Tests that manifest can validate the test manifest properly."""
         a_manifest()
@@ -113,45 +158,44 @@ class ManifestTest(unittest.TestCase):
     def test_can_fail_toconstruct(self):
         """Tests that the manifest raises an Error when called with falsy parameters."""
         a_manifest(-1)
-        self.assertRaises(schematics.exceptions.DataError, a_manifest, "invalid amount")
+        self.assertRaises(validation_data_errors[test_mode], a_manifest, "invalid amount")
 
     def test_can_fail_toconstruct2(self):
         """Tests that validated fields can't be broken without an exception."""
         mani = a_manifest()
         mani.taskdata_uri = 'test'
-        self.assertRaises(schematics.exceptions.DataError, mani.validate)
+        self.assertRaises(validation_data_errors[test_mode], validate_func(mani))
 
     def test_can_make_request_config_job(self):
         """Test that jobs with valid request_config parameter work"""
-        manifest = a_manifest(
-            request_type='image_label_area_select', request_config={'shape_type': 'point'})
+        manifest = a_manifest(request_type='image_label_area_select',
+                              request_config={'shape_type': 'point'})
 
     def test_can_make_nested_request_config_job_single_nest(self):
         """Test that jobs with valid nested request_config parameter work"""
-        nested_manifest = a_nested_manifest(
-            request_type='image_label_area_select', request_config={'shape_type': 'point'})
+        nested_manifest = a_nested_manifest(request_type='image_label_area_select',
+                                            request_config={'shape_type': 'point'})
 
-        manifest = a_manifest(
-            request_type='multi_challenge', multi_challenge_manifests=[nested_manifest])
+        manifest = a_manifest(request_type='multi_challenge',
+                              multi_challenge_manifests=[nested_manifest])
 
     def test_can_make_nested_request_config_job_multiple_nest(self):
         """Test that jobs with multiple valid nested request_config parameters work"""
-        nested_manifest = a_nested_manifest(
-            request_type='image_label_area_select', request_config={'shape_type': 'point'})
+        nested_manifest = a_nested_manifest(request_type='image_label_area_select',
+                                            request_config={'shape_type': 'point'})
 
-        nested_manifest_2 = a_nested_manifest(
-            request_type='image_label_area_select', request_config={'shape_type': 'point'})
+        nested_manifest_2 = a_nested_manifest(request_type='image_label_area_select',
+                                              request_config={'shape_type': 'point'})
 
-        manifest = a_manifest(
-            request_type='multi_challenge',
-            multi_challenge_manifests=[nested_manifest, nested_manifest_2])
+        manifest = a_manifest(request_type='multi_challenge',
+                              multi_challenge_manifests=[nested_manifest, nested_manifest_2])
 
     def test_can_bad_request_config(self):
         """Test that an invalid shape_type in request_config will fail"""
         manifest = a_manifest()
         manifest.request_type = 'image_label_area_select'
         manifest.request_config = {'shape_type': 'not-a-real-option'}
-        self.assertRaises(schematics.exceptions.DataError, manifest.validate)
+        self.assertRaises(validation_data_errors[test_mode], validate_func(manifest))
 
     def test_gets_default_restrictedanswerset(self):
         """Make sure that the image_label_area_select jobs get a default RAS"""
@@ -176,16 +220,24 @@ class ManifestTest(unittest.TestCase):
             'job_total_tasks': 5,
             'taskdata_uri': FAKE_URL
         }
-        manifest = basemodels.Manifest(model)
 
-        manifest.validate()
-        self.assertGreater(len(manifest['requester_restricted_answer_set'].keys()), 0)
+        manifest = create_manifest(model)
+
+        func = validate_func(manifest)
+        # Return new object for pydantic library
+        if test_mode == PYDANTIC:
+            manifest = func(True)
+        else:
+            func()
+
+        self.assertGreater(len(manifest.to_primitive()['requester_restricted_answer_set'].keys()),
+                           0)
 
     def test_confcalc_configuration_id(self):
         """ Test that key is in manifest """
         manifest = a_manifest()
         manifest.confcalc_configuration_id = 'test_conf_id'
-        manifest.validate()
+        validate_func(manifest)()
 
         self.assertTrue("confcalc_configuration_id" in manifest.to_primitive())
 
@@ -194,21 +246,21 @@ class ManifestTest(unittest.TestCase):
         model = a_manifest()
 
         model.requester_question_example = "https://test.com"
-        self.assertTrue(model.validate() is None)
+        self.assertTrue(validate_func(model)() is None)
         self.assertIsInstance(model.to_primitive()['requester_question_example'], str)
 
         model.requester_question_example = ["https://test.com"]
-        self.assertTrue(model.validate() is None)
+        self.assertTrue(validate_func(model)() is None)
         self.assertIsInstance(model.to_primitive()['requester_question_example'], list)
 
         model.requester_question_example = "non-url"
-        self.assertRaises(schematics.exceptions.DataError, model.validate)
+        self.assertRaises(validation_data_errors[test_mode], validate_func(model))
         model.requester_question_example = ["non-url"]
-        self.assertRaises(schematics.exceptions.DataError, model.validate)
+        self.assertRaises(validation_data_errors[test_mode], validate_func(model))
 
         # we now allow lists in non-ilb types
         model.request_type = "image_label_area_select"
-        self.assertTrue(model.validate)
+        self.assertTrue(validate_func(model))
 
     def test_restricted_audience(self):
         """ Test that restricted audience is in the Manifest """
@@ -226,7 +278,7 @@ class ManifestTest(unittest.TestCase):
             }],
             "min_difficulty": 2,
         }
-        manifest.validate()
+        validate_func(manifest)()
         self.assertTrue("restricted_audience" in manifest.to_primitive())
         self.assertTrue("minimum_client_confidence" in manifest.to_primitive()
                         ["restricted_audience"]["confidence"][0])
@@ -274,56 +326,53 @@ class ManifestTest(unittest.TestCase):
                     "min_shapes_per_image": 1,
                     "max_shapes_per_image": 4
                 }
-            },
-                                          {
-                                              "request_type": "image_label_multiple_choice",
-                                              "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                                              "requester_question": {
-                                                  "en": "Select the corresponding label."
-                                              },
-                                              "requester_restricted_answer_set": {
-                                                  "print": {
-                                                      "en": "Print"
-                                                  },
-                                                  "hand-writing": {
-                                                      "en": "Hand Writing"
-                                                  }
-                                              },
-                                              "request_config": {
-                                                  "multiple_choice_max_choices": 1
-                                              }
-                                          },
-                                          {
-                                              "request_type": "image_label_multiple_choice",
-                                              "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                                              "requester_question": {
-                                                  "en": "Select the corresponding labels."
-                                              },
-                                              "requester_restricted_answer_set": {
-                                                  "top-bottom": {
-                                                      "en": "Top to Bottom"
-                                                  },
-                                                  "bottom-top": {
-                                                      "en": "Bottom to Top"
-                                                  },
-                                                  "left-right": {
-                                                      "en": "Left to Right"
-                                                  },
-                                                  "right-left": {
-                                                      "en": "Right to Left"
-                                                  }
-                                              },
-                                              "request_config": {
-                                                  "multiple_choice_max_choices": 1
-                                              }
-                                          },
-                                          {
-                                              "request_type": "image_label_text",
-                                              "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                                              "requester_question": {
-                                                  "en": "Please enter the word in the image."
-                                              }
-                                          }],
+            }, {
+                "request_type": "image_label_multiple_choice",
+                "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+                "requester_question": {
+                    "en": "Select the corresponding label."
+                },
+                "requester_restricted_answer_set": {
+                    "print": {
+                        "en": "Print"
+                    },
+                    "hand-writing": {
+                        "en": "Hand Writing"
+                    }
+                },
+                "request_config": {
+                    "multiple_choice_max_choices": 1
+                }
+            }, {
+                "request_type": "image_label_multiple_choice",
+                "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+                "requester_question": {
+                    "en": "Select the corresponding labels."
+                },
+                "requester_restricted_answer_set": {
+                    "top-bottom": {
+                        "en": "Top to Bottom"
+                    },
+                    "bottom-top": {
+                        "en": "Bottom to Top"
+                    },
+                    "left-right": {
+                        "en": "Left to Right"
+                    },
+                    "right-left": {
+                        "en": "Right to Left"
+                    }
+                },
+                "request_config": {
+                    "multiple_choice_max_choices": 1
+                }
+            }, {
+                "request_type": "image_label_text",
+                "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+                "requester_question": {
+                    "en": "Please enter the word in the image."
+                }
+            }],
             "taskdata": [{
                 "datapoint_hash": "sha1:5daf66c6031df7f8913bfa0b52e53e3bcd42aab3",
                 "datapoint_uri": "http://test.com/task.jpg",
@@ -331,9 +380,9 @@ class ManifestTest(unittest.TestCase):
             }]
         }
 
-        model = basemodels.Manifest(obj)
+        model = create_manifest(obj)
         # print(model.to_primitive())
-        self.assertTrue(model.validate() is None)
+        self.assertTrue(validate_func(model)() is None)
 
     def test_webhook(self):
         """ Test that webhook is correct """
@@ -342,13 +391,13 @@ class ManifestTest(unittest.TestCase):
             "job_completed": ["http://servicename:4000/api/webhook"]
         }
 
-        webhook_model = basemodels.Webhook(webhook)
-        webhook_model.validate()
+        webhook_model = create_webhook(webhook)
+        validate_func(webhook_model)()
         self.assertTrue("webhook_id" in webhook_model.to_primitive())
 
         model = a_manifest()
         model.webhook = webhook
-        model.validate()
+        validate_func(model)()
         self.assertTrue("webhook" in model.to_primitive())
 
 
@@ -381,7 +430,7 @@ class ViaTest(unittest.TestCase):
             }]
         }
 
-        parsed = basemodels.ViaDataManifest().dump(content)
+        parsed = schematics_basemodels.ViaDataManifest().dump(content)
         self.assertEqual(len(parsed['datapoints']), 1)
         self.assertEqual(parsed['version'], 1)
 
@@ -409,7 +458,7 @@ class ViaTest(unittest.TestCase):
             }]
         }
 
-        parsed = basemodels.ViaDataManifest().dump(content)
+        parsed = schematics_basemodels.ViaDataManifest().dump(content)
         self.assertEqual(len(parsed['datapoints']), 1)
         self.assertEqual(parsed['version'], 1)
         self.assertIn('dog', parsed['datapoints'][0]['class_attributes'])
@@ -426,12 +475,12 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.register_http_response(uri, manifest, body)
 
-        basemodels.validate_manifest_uris(manifest)
+        test_models.validate_manifest_uris(manifest)
 
     def test_no_uris(self):
         """ should not raise if there are no uris to validate """
         manifest = {}
-        basemodels.validate_manifest_uris(manifest)
+        test_models.validate_manifest_uris(manifest)
 
     def test_groundtruth_uri_ilb_valid(self):
         body = {
@@ -444,14 +493,14 @@ class TestValidateManifestUris(unittest.TestCase):
     def test_groundtruth_uri_ilb_invalid(self):
         body = {"not_uri": ["false", "false", True]}
 
-        with self.assertRaises(schematics.exceptions.BaseError):
+        with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_binary", body)
 
     def test_groundtruth_uri_ilb_invalid_format(self):
         """ should raise if groundtruth_uri contains array instead of object """
         body = [{"key": "value"}]
 
-        with self.assertRaises(schematics.exceptions.BaseError):
+        with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_binary", body)
 
     def test_groundtruth_uri_ilmc_valid(self):
@@ -465,7 +514,7 @@ class TestValidateManifestUris(unittest.TestCase):
     def test_groundtruth_uri_ilmc_invalid_key(self):
         body = {"not_uri": [["cat"], ["cat"], ["cat"]]}
 
-        with self.assertRaises(schematics.exceptions.BaseError):
+        with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_multiple_choice", body)
 
     def test_groundtruth_uri_ilmc_invalid_value(self):
@@ -473,7 +522,7 @@ class TestValidateManifestUris(unittest.TestCase):
             "https://domain.com/file1.jpeg": [True, False],
         }
 
-        with self.assertRaises(schematics.exceptions.BaseError):
+        with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_multiple_choice", body)
 
     def test_groundtruth_uri_ilas_valid(self):
@@ -496,13 +545,13 @@ class TestValidateManifestUris(unittest.TestCase):
             }]]
         }
 
-        with self.assertRaises(schematics.exceptions.BaseError):
+        with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_area_select", body)
 
     def test_groundtruth_uri_ilas_invalid_value(self):
         body = {"https://domain.com/file1.jpeg": [[True]]}
 
-        with self.assertRaises(schematics.exceptions.BaseError):
+        with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_area_select", body)
 
     def test_taskdata_empty(self):
@@ -513,8 +562,8 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.register_http_response(uri, manifest, body)
 
-        with self.assertRaises(schematics.exceptions.BaseError):
-            basemodels.validate_manifest_uris(manifest)
+        with self.assertRaises(validation_base_errors[test_mode]):
+            test_models.validate_manifest_uris(manifest)
 
     def test_taskdata_invalid_format(self):
         """ should raise if taskdata_uri contains object instead of array """
@@ -524,8 +573,8 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.register_http_response(uri, manifest, body)
 
-        with self.assertRaises(schematics.exceptions.BaseError):
-            basemodels.validate_manifest_uris(manifest)
+        with self.assertRaises(validation_base_errors[test_mode]):
+            test_models.validate_manifest_uris(manifest)
 
     def test_taskdata_uri_valid(self):
         uri = "https://uri.com"
@@ -534,16 +583,15 @@ class TestValidateManifestUris(unittest.TestCase):
             "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
             "datapoint_uri": "https://domain.com/file1.jpg",
             "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-        },
-                {
-                    "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
-                    "datapoint_uri": "https://domain.com/file2.jpg",
-                    "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-                }]
+        }, {
+            "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
+            "datapoint_uri": "https://domain.com/file2.jpg",
+            "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
+        }]
 
         self.register_http_response(uri, manifest, body)
 
-        basemodels.validate_manifest_uris(manifest)
+        test_models.validate_manifest_uris(manifest)
 
     def test_taskdata_uri_invalid(self):
         uri = "https://uri.com"
@@ -552,8 +600,8 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.register_http_response(uri, manifest, body)
 
-        with self.assertRaises(schematics.exceptions.BaseError):
-            basemodels.validate_manifest_uris(manifest)
+        with self.assertRaises(validation_base_errors[test_mode]):
+            test_models.validate_manifest_uris(manifest)
 
     def test_groundtruth_and_taskdata_valid(self):
         taskdata_uri = "https://td.com"
@@ -568,12 +616,11 @@ class TestValidateManifestUris(unittest.TestCase):
             "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
             "datapoint_uri": "https://domain.com/file1.jpg",
             "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-        },
-                    {
-                        "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
-                        "datapoint_uri": "https://domain.com/file2.jpg",
-                        "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-                    }]
+        }, {
+            "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
+            "datapoint_uri": "https://domain.com/file2.jpg",
+            "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
+        }]
 
         groundtruth = {
             "https://domain.com/123/file1.jpeg": ["false", "false", "false"],
@@ -583,7 +630,7 @@ class TestValidateManifestUris(unittest.TestCase):
         self.register_http_response(taskdata_uri, manifest, taskdata)
         self.register_http_response(groundtruth_uri, manifest, groundtruth)
 
-        basemodels.validate_manifest_uris(manifest)
+        test_models.validate_manifest_uris(manifest)
 
     def test_mitl_in_internal_config(self):
         """ Test that mitl config can be part of the internal configuration """
@@ -608,12 +655,15 @@ class TestValidateManifestUris(unittest.TestCase):
         }
 
         model["internal_config"]["mitl"] = mitl_config
-        manifest = basemodels.Manifest(model)
-        manifest.validate()
+        manifest = create_manifest(model)
+        validate_func(manifest)()
         self.assertTrue(True)
 
 
 if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger("urllib3").setLevel(logging.INFO)
-    unittest.main()
+    for mode in test_modes:
+        test_mode = mode
+        test_models = test_modes[mode]
+        unittest.main(exit=False)
