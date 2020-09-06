@@ -3,7 +3,6 @@ import requests
 from requests.exceptions import RequestException
 from typing_extensions import Literal
 from typing import Dict, Callable, Any, Union, Type, ClassVar
-from pydantic import BaseModel, HttpUrl, stricturl, constr
 from enum import Enum
 from uuid import UUID
 from typing import List, Optional
@@ -11,12 +10,40 @@ from .data.groundtruth import validate_groundtruth_entry
 from .data.taskdata import validate_taskdata_entry
 import itertools
 from typing import Iterable
-from pydantic import BaseModel, validator, ValidationError, validate_model
-from pydantic.fields import ModelField
+from pydantic import BaseModel, validator, ValidationError, validate_model, ConstrainedStr, Required, constr, HttpUrl, stricturl, AnyUrl
+from pydantic.fields import ModelField, Field
 from decimal import Decimal
 from itertools import chain
 
+# Validator function for checking  presence both of taskdata and taskdata_uri fields
+def validator_taskdata_uri(cls, value, values, **kwargs):
+    if "taskdata" in values and values['taskdata'] is not None and len(values['taskdata']) > 0 and "taskdata_uri" in values:
+        raise ValidationError(u'Specify only one of taskdata {} or taskdata_uri {}'.format(
+            values['taskdata'], values['taskdata_uri']))
+    return value
 
+# Request type validator function
+def validator_request_type(cls, value, values, **kwargs):
+    """
+    validate request types for all types of challenges
+    multi_challenge should always have multi_challenge_manifests
+    """
+    if value == BaseJobTypesEnum.multi_challenge:
+        if not "multi_challenge_manifests" in values:
+            raise ValidationError("multi_challenge requires multi_challenge_manifests.")
+    elif value in [
+            BaseJobTypesEnum.image_label_multiple_choice,
+            BaseJobTypesEnum.image_label_area_select
+    ]:
+        if values.get('multiple_choice_min_choices', 1) > values.get(
+                'multiple_choice_max_choices', 1):
+            raise ValidationError(
+                "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices"
+            )
+
+    return value
+
+# Base job types
 class BaseJobTypesEnum(str, Enum):
     image_label_binary = "image_label_binary"
     image_label_multiple_choice = "image_label_multiple_choice"
@@ -30,24 +57,7 @@ class BaseJobTypesEnum(str, Enum):
     image_label_semantic_segmentation_one_option = "image_label_semantic_segmentation_one_option"
     image_label_semantic_segmentation_multiple_options = "image_label_semantic_segmentation_multiple_options"
     image_label_text = "image_label_text"
-
-
-# We need to hardcode this due https://github.com/python/mypy/issues/5317#issuecomment-402374285
-class BaseJobTypesEnum2(str, Enum):
-    image_label_binary = "image_label_binary"
-    image_label_multiple_choice = "image_label_multiple_choice"
-    text_free_entry = "text_free_entry"
-    text_multiple_choice_one_option = "text_multiple_choice_one_option"
-    text_multiple_choice_multiple_options = "text_multiple_choice_multiple_options"
-    image_label_area_adjust = "image_label_area_adjust"
-    image_label_area_select = "image_label_area_select"
-    image_label_single_polygon = "image_label_single_polygon"
-    image_label_multiple_polygons = "image_label_multiple_polygons"
-    image_label_semantic_segmentation_one_option = "image_label_semantic_segmentation_one_option"
-    image_label_semantic_segmentation_multiple_options = "image_label_semantic_segmentation_multiple_options"
-    image_label_text = "image_label_text"
     multi_challenge = "multi_challenge"
-
 
 class Model(BaseModel):
     def to_primitive(self):
@@ -64,18 +74,6 @@ class Model(BaseModel):
         if return_new:
             return self.__class__(**out_dict)
 
-
-# Validator function for assigning default value to id fields
-def set_id(v, values):
-    return v or uuid.uuid4()
-
-# Validator function for checking  presence both of taskdata and taskdata_uri fields
-def validate_taskdata_uri(value, values):
-    if "taskdata" in values and len(values['taskdata']) > 0 and "taskdata_uri" in values:
-        raise ValidationError(u'Specify only one of taskdata {} or taskdata_uri {}'.format(
-            values['taskdata'], values['taskdata_uri']))
-    return value
-
 class Webhook(Model):
     """ Model for webhook configuration """
     webhook_id: UUID
@@ -91,8 +89,8 @@ class Webhook(Model):
 class TaskData(Model):
     """ objects within taskdata list in Manifest """
     task_key: UUID
-    datapoint_uri: stricturl(min_length=10)
-    datapoint_hash: constr(strip_whitespace=True, min_length=10)
+    datapoint_uri: HttpUrl 
+    datapoint_hash: str = Field(..., min_length=10, strip_whitespace=True)
 
 
 class RequestConfig(Model):
@@ -125,31 +123,8 @@ class InternalConfig(Model):
 class NestedManifest(Model):
     """ The nested manifest description for multi_challenge jobs """
     job_id: UUID = uuid.uuid4()
-
     request_type: Optional[BaseJobTypesEnum]
-
-    @validator("request_type")
-    def validate_request_type(cls, value, values, **kwargs):
-        """
-        validate request types for all types of challenges
-        multi_challenge should always have multi_challenge_manifests
-        """
-
-        if value == BaseJobTypesEnum2.multi_challenge:
-            if not "multi_challenge_manifests" in values:
-                raise ValidationError("multi_challenge requires multi_challenge_manifests.")
-        elif value in [
-                BaseJobTypesEnum.image_label_multiple_choice,
-                BaseJobTypesEnum.image_label_area_select
-        ]:
-            if values.get('multiple_choice_min_choices', 1) > values.get(
-                    'multiple_choice_max_choices', 1):
-                raise ValidationError(
-                    "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices"
-                )
-
-        return value
-
+    validate_request_type = validator('request_type', allow_reuse=True, always=True)(validator_request_type)
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 
     @validator('requester_restricted_answer_set', always=True)
@@ -221,27 +196,8 @@ class Manifest(Model):
 
     job_total_tasks: Optional[int]
     multi_challenge_manifests: Optional[List[NestedManifest]]
-    request_type: Optional[BaseJobTypesEnum2]
-
-    @validator("request_type")
-    def validate_request_type(cls, value, values, **kwargs):
-        """
-        validate request types for all types of challenges
-        multi_challenge should always have multi_challenge_manifests
-        """
-        if value == BaseJobTypesEnum2.multi_challenge:
-            if not "multi_challenge_manifests" in values:
-                raise ValidationError("multi_challenge requires multi_challenge_manifests.")
-        elif value in [
-                BaseJobTypesEnum2.image_label_area_select, BaseJobTypesEnum2.image_label_binary
-        ]:
-            if values.get('multiple_choice_min_choices', 1) > values.get(
-                    'multiple_choice_max_choices', 1):
-                raise ValidationError(
-                    "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices"
-                )
-
-        return value
+    request_type: Optional[BaseJobTypesEnum]
+    validate_request_type = validator('request_type', allow_reuse=True, always=True)(validator_request_type)
 
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 
@@ -252,7 +208,7 @@ class Manifest(Model):
         if not ("request_type" in values):
             raise ValidationError("request_type missing")
 
-        if values['request_type'] == BaseJobTypesEnum2.image_label_area_select:
+        if values['request_type'] == BaseJobTypesEnum.image_label_area_select:
             if not value or len(value.keys()) == 0:
                 value = {'label': {}}
                 values['requester_restricted_answer_set'] = value
@@ -273,7 +229,7 @@ class Manifest(Model):
 
         # based on https://github.com/hCaptcha/hmt-basemodels/issues/27#issuecomment-590706643
         supports_lists = [
-            BaseJobTypesEnum2.image_label_area_select, BaseJobTypesEnum2.image_label_binary
+            BaseJobTypesEnum.image_label_area_select, BaseJobTypesEnum.image_label_binary
         ]
 
         if isinstance(value, list) and not (values['request_type'] in supports_lists):
@@ -324,8 +280,8 @@ class Manifest(Model):
     confcalc_configuration_id: Optional[str]
     restricted_audience: Optional[Dict[str, Union[float, List[Dict[str, Dict[str, float]]]]]]
 
-    validate_taskdata_uri = validator('taskdata_uri', allow_reuse=True,  always=True)(validate_taskdata_uri)
-    validate_taskdata = validator('taskdata', allow_reuse=True, always=True)(validate_taskdata_uri)
+    validate_taskdata_uri = validator('taskdata_uri', allow_reuse=True, always=True)(validator_taskdata_uri)
+    validate_taskdata = validator('taskdata', allow_reuse=True, always=True)(validator_taskdata_uri)
     webhook: Optional[Webhook]
 
     class Config:

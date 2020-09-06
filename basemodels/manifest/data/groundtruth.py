@@ -8,14 +8,13 @@ from typing import Generic, TypeVar, Optional, List
 from pydantic.generics import GenericModel
 
 
-DataT = TypeVar('DataT')
-class WrapperModel(GenericModel, Generic[DataT]):
-        data: Optional[DataT]
-        class Config:
-                arbitrary_types_allowed = True
-
 def create_wrapper_model(type):
-    return WrapperModel[type]
+    class WrapperModel(BaseModel):
+            data: Optional[type]
+            class Config:
+                    arbitrary_types_allowed = True
+    
+    return WrapperModel
 
 def validate_wrapper_model(Model, data):
     *_, validation_error = validate_model(Model, {"data": data})
