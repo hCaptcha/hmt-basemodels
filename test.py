@@ -444,7 +444,12 @@ class ViaTest(unittest.TestCase):
             }]
         }
 
-        parsed = schematics_basemodels.ViaDataManifest().dump(content)
+        # Also test the marshmallow model from the old package
+        parsed: Dict
+        if test_mode == SCHEMATICS:
+            parsed = test_models.ViaDataManifest().dump(content)
+        else:
+            parsed = test_models.ViaDataManifest(**content).dict()
         self.assertEqual(len(parsed['datapoints']), 1)
         self.assertEqual(parsed['version'], 1)
 
@@ -472,7 +477,12 @@ class ViaTest(unittest.TestCase):
             }]
         }
 
-        parsed = schematics_basemodels.ViaDataManifest().dump(content)
+        # Also test the marshmallow model from the old package
+        parsed: Dict
+        if test_mode == SCHEMATICS:
+            parsed = test_models.ViaDataManifest().dump(content)
+        else:
+            parsed = test_models.ViaDataManifest(**content).dict()
         self.assertEqual(len(parsed['datapoints']), 1)
         self.assertEqual(parsed['version'], 1)
         self.assertIn('dog', parsed['datapoints'][0]['class_attributes'])

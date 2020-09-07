@@ -1,11 +1,7 @@
 from typing_extensions import Literal
-from typing import Dict, Callable, Any, Union, Type, ClassVar 
-from pydantic import BaseModel,HttpUrl,UUID4, stricturl, constr, validate_model
-from enum import Enum
-from uuid import UUID
+from typing import Dict, Union
+from pydantic import BaseModel, HttpUrl, validate_model
 from typing import List, Optional
-from typing import Generic, TypeVar, Optional, List
-from pydantic.generics import GenericModel
 
 
 def create_wrapper_model(type):

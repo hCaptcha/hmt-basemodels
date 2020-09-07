@@ -2,46 +2,46 @@ import uuid
 import requests
 from requests.exceptions import RequestException
 from typing_extensions import Literal
-from typing import Dict, Callable, Any, Union, Type, ClassVar
+from typing import Dict, Callable, Any, Union, Type, List, Optional
 from enum import Enum
 from uuid import UUID
-from typing import List, Optional
 from .data.groundtruth import validate_groundtruth_entry
 from .data.taskdata import validate_taskdata_entry
-import itertools
-from typing import Iterable
-from pydantic import BaseModel, validator, ValidationError, validate_model, ConstrainedStr, Required, constr, HttpUrl, stricturl, AnyUrl
-from pydantic.fields import ModelField, Field
+from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl
+from pydantic.fields import Field
 from decimal import Decimal
-from itertools import chain
 
-# Validator function for checking  presence both of taskdata and taskdata_uri fields
+# Validator function for taskdata and taskdata_uri fields
 def validator_taskdata_uri(cls, value, values, **kwargs):
-    if "taskdata" in values and values['taskdata'] is not None and len(values['taskdata']) > 0 and "taskdata_uri" in values:
+    if "taskdata" in values and values['taskdata'] is not None and \
+            len(values['taskdata']) > 0 and "taskdata_uri" in values:
         raise ValidationError(u'Specify only one of taskdata {} or taskdata_uri {}'.format(
             values['taskdata'], values['taskdata_uri']))
     return value
 
-# Request type validator function
-def validator_request_type(cls, value, values, **kwargs):
-    """
-    validate request types for all types of challenges
-    multi_challenge should always have multi_challenge_manifests
-    """
-    if value == BaseJobTypesEnum.multi_challenge:
-        if not "multi_challenge_manifests" in values:
-            raise ValidationError("multi_challenge requires multi_challenge_manifests.")
-    elif value in [
-            BaseJobTypesEnum.image_label_multiple_choice,
-            BaseJobTypesEnum.image_label_area_select
-    ]:
-        if values.get('multiple_choice_min_choices', 1) > values.get(
-                'multiple_choice_max_choices', 1):
-            raise ValidationError(
-                "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices"
-            )
+# Return a request type validator function
+def validator_request_type_func(multi_challenge: bool = True):
+    def _validator_request_type(cls, value, values, **kwargs):
+        """
+        validate request types for all types of challenges
+        multi_challenge should always have multi_challenge_manifests
+        """
+        if value == BaseJobTypesEnum.multi_challenge:
+            if multi_challenge == False:
+                raise ValidationError("multi_challenge request is not allowed here.")
+            if not "multi_challenge_manifests" in values:
+                raise ValidationError("multi_challenge requires multi_challenge_manifests.")
+        elif value in [BaseJobTypesEnum.image_label_multiple_choice, BaseJobTypesEnum.image_label_area_select]:
+            if values.get('multiple_choice_min_choices', 1) > values.get('multiple_choice_max_choices', 1):
+                raise ValidationError(
+                    "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
+        return value
+    return _validator_request_type
 
-    return value
+# New type
+class AtLeastTenCharUrl(HttpUrl):
+    min_length = 10
+
 
 # Base job types
 class BaseJobTypesEnum(str, Enum):
@@ -70,7 +70,7 @@ class Model(BaseModel):
         if validation_error:
             raise validation_error
 
-        # For compatibility with the schematics library unittest
+        # For compatibility with tests
         if return_new:
             return self.__class__(**out_dict)
 
@@ -89,7 +89,7 @@ class Webhook(Model):
 class TaskData(Model):
     """ objects within taskdata list in Manifest """
     task_key: UUID
-    datapoint_uri: HttpUrl 
+    datapoint_uri: AtLeastTenCharUrl
     datapoint_hash: str = Field(..., min_length=10, strip_whitespace=True)
 
 
@@ -123,8 +123,9 @@ class InternalConfig(Model):
 class NestedManifest(Model):
     """ The nested manifest description for multi_challenge jobs """
     job_id: UUID = uuid.uuid4()
-    request_type: Optional[BaseJobTypesEnum]
-    validate_request_type = validator('request_type', allow_reuse=True, always=True)(validator_request_type)
+    request_type: BaseJobTypesEnum
+    validate_request_type = validator('request_type', allow_reuse=True, \
+            always=True)(validator_request_type_func(multi_challenge=False))
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 
     @validator('requester_restricted_answer_set', always=True)
@@ -178,11 +179,11 @@ class NestedManifest(Model):
 
     # Configuration id -- XXX LEGACY
     confcalc_configuration_id: Optional[str]
-
     webhook: Optional[Webhook]
 
     class Config:
         arbitrary_types_allowed = True
+        # Required parsing functions
         json_encoders = {
             UUID: lambda v: str(v.id),
         }
@@ -190,14 +191,14 @@ class NestedManifest(Model):
 
 class Manifest(Model):
     """ The manifest description. """
-    job_mode: Optional[Literal["batch", "online", "instant_delivery"]]
+    job_mode: Literal["batch", "online", "instant_delivery"]
     job_api_key: UUID = uuid.uuid4()
     job_id: UUID = uuid.uuid4()
-
     job_total_tasks: Optional[int]
     multi_challenge_manifests: Optional[List[NestedManifest]]
-    request_type: Optional[BaseJobTypesEnum]
-    validate_request_type = validator('request_type', allow_reuse=True, always=True)(validator_request_type)
+    request_type: BaseJobTypesEnum
+    validate_request_type = validator('request_type', allow_reuse=True, \
+            always=True)(validator_request_type_func())
 
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 
@@ -237,17 +238,17 @@ class Manifest(Model):
         return value
 
     unsafe_content: bool = False
-    task_bid_price: Optional[Decimal]
-    oracle_stake: Optional[Decimal]
+    task_bid_price: Decimal
+    oracle_stake: Decimal
     expiration_date: Optional[int]
     requester_accuracy_target: float = 0.1
     manifest_smart_bounty_addr: Optional[str]
     hmtoken_addr: Optional[str]
     minimum_trust_server: float = 0.1
     minimum_trust_client: float = 0.1
-    recording_oracle_addr: Optional[str]
-    reputation_oracle_addr: Optional[str]
-    reputation_agent_addr: Optional[str]
+    recording_oracle_addr: str
+    reputation_oracle_addr: str
+    reputation_agent_addr: str
     requester_pgp_public_key: Optional[str]
     ro_uri: Optional[str]
     repo_uri: Optional[str]

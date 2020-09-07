@@ -1,8 +1,11 @@
-from typing_extensions import Literal
-from typing import Dict, Callable, Any, Union, Type, ClassVar 
+from typing import Dict
 from pydantic import BaseModel, HttpUrl, validate_model, ValidationError
 from uuid import UUID
 from typing import Optional
+
+# New type
+class AtLeastTenCharUrl(HttpUrl):
+    min_length = 10
 
 class TaskDataEntry(BaseModel):
     """
@@ -21,8 +24,8 @@ class TaskDataEntry(BaseModel):
       }
     ]
     """
-    task_key: UUID
-    datapoint_uri: HttpUrl
+    task_key: Optional[UUID]
+    datapoint_uri: AtLeastTenCharUrl
     datapoint_hash: Optional[str]
 
 
