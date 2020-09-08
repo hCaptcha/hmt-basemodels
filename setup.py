@@ -13,4 +13,7 @@ setuptools.setup(
         "Programming Language :: Python"
     ],
     packages=setuptools.find_packages(),
-    install_requires=["schematics>=2.1.0", "marshmallow>=3.2.1", "requests>=2"])
+    install_requires=[
+        "schematics>=2.1.0", "marshmallow>=3.2.1", "requests>=2", "typing-extensions>=3.7.4.3",
+        "pydantic>=1.6.1"
+    ])

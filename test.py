@@ -6,8 +6,8 @@ import os
 import sys
 import schematics
 import basemodels
-# Add support for the old schematics based manifest model
-import basemodels.support.schematics as schematics_basemodels
+# New pydantic model
+import basemodels.pydantic as pydantic_basemodels
 import unittest
 import httpretty
 import json
@@ -21,9 +21,9 @@ REC_ORACLE = "0xD979105297fB0eee83F7433fC09279cb5B94fFC6"
 FAKE_ORACLE = "0x1413862c2b7054cdbfdc181b83962cb0fc11fd92"
 
 # Test both version of models
-SCHEMATICS = "shematics"
+SCHEMATICS = "schematics"
 PYDANTIC = "pydantic"
-test_modes = {SCHEMATICS: schematics_basemodels, PYDANTIC: basemodels}
+test_modes = {SCHEMATICS: basemodels, PYDANTIC: pydantic_basemodels}
 
 # Library related errors
 validation_base_errors = {SCHEMATICS: schematics.exceptions.BaseError, PYDANTIC: ValidationError}
@@ -35,22 +35,22 @@ validation_data_errors = {SCHEMATICS: schematics.exceptions.DataError, PYDANTIC:
 # A helper function for create manifest models based on model library
 def create_manifest(data: dict):
     if test_mode == SCHEMATICS:
-        return schematics_basemodels.Manifest(data)
-    return basemodels.Manifest.construct(**data)
+        return basemodels.Manifest(data)
+    return pydantic_basemodels.Manifest.construct(**data)
 
 
 # A helper function for create nested manifest models based on model library
 def create_nested_manifest(data: dict):
     if test_mode == SCHEMATICS:
-        return schematics_basemodels.NestedManifest(data)
-    return basemodels.NestedManifest.construct(**data)
+        return basemodels.NestedManifest(data)
+    return pydantic_basemodels.NestedManifest.construct(**data)
 
 
 # A helper function for create nested manifest models based on model library
 def create_webhook(data: dict):
     if test_mode == SCHEMATICS:
-        return schematics_basemodels.Webhook(data)
-    return basemodels.Webhook.construct(**data)
+        return basemodels.Webhook(data)
+    return pydantic_basemodels.Webhook.construct(**data)
 
 
 # Json serializer for models based on libraries
@@ -71,7 +71,7 @@ def validate_func(model):
 
 # To be changed in runtime
 test_mode = SCHEMATICS
-test_models = schematics_basemodels
+test_models = basemodels
 
 
 def a_manifest(number_of_tasks=100,

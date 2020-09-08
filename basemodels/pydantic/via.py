@@ -31,27 +31,28 @@ and the annotations associated with that image data.  Each file takes the genera
 
 
 """
-from marshmallow import Schema, fields
+from typing import Dict, List, Any, Optional, Union
+from pydantic import BaseModel, HttpUrl
 
 
-class RegionAttributesSchema(Schema):
-    region_attributes = fields.Dict(keys=fields.Str())
-    shape_attributes = fields.Dict(keys=fields.Str())
+class RegionAttributesBaseModel(BaseModel):
+    region_attributes: Dict[str, Any]
+    shape_attributes: Dict[str, Any]
 
 
-class ClassAttributeSchema(Schema):
+class ClassAttributeBaseModel(BaseModel):
     # inner class attributes field not required, here for legacy purposes
-    class_attributes = fields.Dict(keys=fields.Str())
-    regions = fields.Nested(RegionAttributesSchema, many=True)
+    class_attributes: Optional[Dict[str, Any]]
+    regions: Optional[List[RegionAttributesBaseModel]]
 
 
-class DatapointSchema(Schema):
-    task_uri = fields.Url(required=True)
-    metadata = fields.Dict(keys=fields.Str())
-    class_attributes = fields.Dict(values=fields.Nested(ClassAttributeSchema))
+class DatapointBaseModel(BaseModel):
+    task_uri: HttpUrl
+    metadata: Optional[Dict[str, Any]]
+    class_attributes: Optional[Union[Any, Dict[str, ClassAttributeBaseModel]]]
 
 
-class ViaDataManifest(Schema):
+class ViaDataManifest(BaseModel):
     """ Main entrypoint to define the VIA Data Format """
-    datapoints = fields.Nested(DatapointSchema, many=True, required=True)
-    version = fields.Integer(default=1)
+    datapoints: List[DatapointBaseModel]
+    version: int = 1

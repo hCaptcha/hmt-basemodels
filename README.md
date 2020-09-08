@@ -41,7 +41,47 @@ Lint the python files:
 yapf --diff ./basemodels/__init__.py ./test.py
 mypy ./basemodels/__init__.py ./test.py --ignore-missing-imports
 ```
+## How to use model
+Using the model (based on schematics library)
+```python
+import basemodels
+from schematics.exceptions import ValidationError
 
+model = {
+    'job_mode': 'batch',
+    'request_type': 'image_label_area_select',
+    'unsafe_content': False,
+    'task_bid_price': 1,
+    ...
+}
+manifest = basemodels.Manifest(model)
+try:
+    manifest.validate()
+except ValidationError, e:
+    print(e.messages)
+```
+  
+Using the new model (based on pydantic library)
+```python
+import basemodels.pydantic as pydantic_models
+from pydantic import ValidationError
+
+model = {
+    'job_mode': 'batch',
+    'request_type': 'image_label_area_select',
+    'unsafe_content': False,
+    'task_bid_price': 1,
+    ...
+}
+# Validate model on creation
+try:
+   manifest = pydantic_models.Manifest(**model)
+except ValidationError as e:
+   print(e.json())
+# Or creating model without validation
+manifest = pydantic_models.Manifest.construct(**model)
+# See https://pydantic-docs.helpmanual.io/usage/models/#creating-models-without-validation
+```
 ## Note for maintainers: Deploying to PyPi
 
 A build will automatically be deployed to PyPi from master if tagged with a version number.  This version number should  match the version in the `setup.py` file.
@@ -67,3 +107,5 @@ Open an issue!
 ## License
 
 MIT © HUMAN Protocol 2020
+
+
