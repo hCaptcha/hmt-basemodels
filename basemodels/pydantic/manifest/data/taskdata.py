@@ -1,5 +1,5 @@
 from typing import Dict
-from pydantic import BaseModel, HttpUrl, validate_model, ValidationError
+from pydantic import BaseModel, HttpUrl, validate_model, ValidationError, validator
 from uuid import UUID
 from typing import Optional
 
@@ -25,7 +25,13 @@ class TaskDataEntry(BaseModel):
     ]
     """
     task_key: Optional[UUID]
-    datapoint_uri: AtLeastTenCharUrl
+    datapoint_uri: HttpUrl
+
+    @validator("datapoint_uri", always=True)
+    def validate_datapoint_uri(cls, value):
+        if len(value) < 10:
+            raise ValidationError("datapoint_uri need to be at least 10 char length.")
+
     datapoint_hash: Optional[str]
 
 

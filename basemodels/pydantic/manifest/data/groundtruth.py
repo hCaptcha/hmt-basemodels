@@ -13,9 +13,7 @@ def create_wrapper_model(type):
     return WrapperModel
 
 def validate_wrapper_model(Model, data):
-    *_, validation_error = validate_model(Model, {"data": data})
-    if validation_error:
-          raise validation_error
+    Model.validate({"data": data})
 
 groundtruth_entry_key_type = HttpUrl
 GroundtruthEntryKeyModel = create_wrapper_model(groundtruth_entry_key_type)
@@ -50,7 +48,7 @@ ILMCGroundtruthEntryModel = create_wrapper_model(ilmc_groundtruth_entry_type)
 
 
 class ILASGroundtruthEntry(BaseModel):
-    entity_name: Union[int, float]
+    entity_name: float
     entity_type: str
     entity_coords: List[Union[int, float]]
 

@@ -13,35 +13,15 @@ from decimal import Decimal
 
 # Validator function for taskdata and taskdata_uri fields
 def validator_taskdata_uri(cls, value, values, **kwargs):
-    if "taskdata" in values and values['taskdata'] is not None and \
-            len(values['taskdata']) > 0 and "taskdata_uri" in values:
-        raise ValidationError(u'Specify only one of taskdata {} or taskdata_uri {}'.format(
-            values['taskdata'], values['taskdata_uri']))
+    taskdata = values.get('taskdata')
+    taskdata_uri = values.get('taskdata_uri')
+    if taskdata is not None and len(taskdata) > 0 and taskdata_uri is not None:
+        raise ValidationError(u'Specify only one of taskdata {} or taskdata_uri {}'.format(taskdata, taskdata_uri))
     return value
 
-# Return a request type validator function
-def validator_request_type_func(multi_challenge: bool = True):
-    def _validator_request_type(cls, value, values, **kwargs):
-        """
-        validate request types for all types of challenges
-        multi_challenge should always have multi_challenge_manifests
-        """
-        if value == BaseJobTypesEnum.multi_challenge:
-            if multi_challenge == False:
-                raise ValidationError("multi_challenge request is not allowed here.")
-            if not "multi_challenge_manifests" in values:
-                raise ValidationError("multi_challenge requires multi_challenge_manifests.")
-        elif value in [BaseJobTypesEnum.image_label_multiple_choice, BaseJobTypesEnum.image_label_area_select]:
-            if values.get('multiple_choice_min_choices', 1) > values.get('multiple_choice_max_choices', 1):
-                raise ValidationError(
-                    "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
-        return value
-    return _validator_request_type
-
-# New type
-class AtLeastTenCharUrl(HttpUrl):
-    min_length = 10
-
+# A validator function for UUID fields
+def validate_uuid(cls, value):
+    return value or uuid.uuid4()
 
 # Base job types
 class BaseJobTypesEnum(str, Enum):
@@ -58,6 +38,32 @@ class BaseJobTypesEnum(str, Enum):
     image_label_semantic_segmentation_multiple_options = "image_label_semantic_segmentation_multiple_options"
     image_label_text = "image_label_text"
     multi_challenge = "multi_challenge"
+
+# Return a request type validator function
+class RequestTypeValidator(object):
+    def __init__(self, multi_challenge: bool = True):
+        self.multi_challenge = multi_challenge
+    def validate(self, cls, value, values):
+        """
+        validate request types for all types of challenges
+        multi_challenge should always have multi_challenge_manifests
+        """
+        if value == BaseJobTypesEnum.multi_challenge:
+            if not self.multi_challenge:
+                raise ValidationError("multi_challenge request is not allowed here.")
+            if "multi_challenge_manifests" not in values:
+                raise ValidationError("multi_challenge requires multi_challenge_manifests.")
+        elif value in [BaseJobTypesEnum.image_label_multiple_choice, BaseJobTypesEnum.image_label_area_select]:
+            if values.get('multiple_choice_min_choices', 1) > values.get('multiple_choice_max_choices', 1):
+                raise ValidationError(
+                    "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
+        return value
+
+# Shape types enum
+class ShapeTypes(str, Enum):
+    point = "point"
+    bounding_box = "bounding_box"
+    polygon = "polygon"
 
 class Model(BaseModel):
     def to_primitive(self):
@@ -89,14 +95,20 @@ class Webhook(Model):
 class TaskData(Model):
     """ objects within taskdata list in Manifest """
     task_key: UUID
-    datapoint_uri: AtLeastTenCharUrl
+    datapoint_uri: HttpUrl
+
+    @validator("datapoint_uri", always=True)
+    def validate_datapoint_uri(cls, value):
+        if len(value) < 10:
+            raise ValidationError("datapoint_uri need to be at least 10 char length.")
+
     datapoint_hash: str = Field(..., min_length=10, strip_whitespace=True)
 
 
 class RequestConfig(Model):
     """ definition of the request_config object in manifest """
     version: int = 0
-    shape_type: Optional[Literal['point', 'bounding_box', 'polygon']]
+    shape_type: Optional[ShapeTypes]
     min_points: Optional[int]
     max_points: Optional[int]
     min_shapes_per_image: Optional[int]
@@ -122,10 +134,13 @@ class InternalConfig(Model):
 
 class NestedManifest(Model):
     """ The nested manifest description for multi_challenge jobs """
-    job_id: UUID = uuid.uuid4()
+    # We will set a default dynamic value for job_id
+    job_id: Optional[UUID]
+    validate_job_id = validator('job_id', always=True, allow_reuse=True)(validate_uuid)
+
     request_type: BaseJobTypesEnum
     validate_request_type = validator('request_type', allow_reuse=True, \
-            always=True)(validator_request_type_func(multi_challenge=False))
+            always=True)(RequestTypeValidator(multi_challenge=False).validate)
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 
     @validator('requester_restricted_answer_set', always=True)
@@ -133,7 +148,7 @@ class NestedManifest(Model):
         """image_label_area_select should always have a single RAS set"""
 
         # validation runs before other params, so need to handle missing case
-        if not ("request_type" in values):
+        if "request_type" not in values:
             raise ValidationError("request_type missing")
         if values['request_type'] == BaseJobTypesEnum.image_label_area_select:
             if not value or len(value.keys()) == 0:
@@ -183,22 +198,25 @@ class NestedManifest(Model):
 
     class Config:
         arbitrary_types_allowed = True
-        # Required parsing functions
-        json_encoders = {
-            UUID: lambda v: str(v.id),
-        }
 
 
 class Manifest(Model):
     """ The manifest description. """
     job_mode: Literal["batch", "online", "instant_delivery"]
-    job_api_key: UUID = uuid.uuid4()
-    job_id: UUID = uuid.uuid4()
+    
+    # We will set a default dynamic value for job_api_key
+    job_api_key: Optional[UUID]
+    validate_job_api_key = validator('job_api_key', always=True, allow_reuse=True)(validate_uuid)
+
+    # We will set a default dynamic value for job_id
+    job_id: Optional[UUID]
+    validate_job_id = validator('job_id', always=True, allow_reuse=True)(validate_uuid)
+
     job_total_tasks: Optional[int]
     multi_challenge_manifests: Optional[List[NestedManifest]]
     request_type: BaseJobTypesEnum
     validate_request_type = validator('request_type', allow_reuse=True, \
-            always=True)(validator_request_type_func())
+            always=True)(RequestTypeValidator().validate)
 
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 
@@ -287,59 +305,64 @@ class Manifest(Model):
 
     class Config:
         arbitrary_types_allowed = True
-        json_encoders = {
-            UUID: lambda v: str(v.hex),
-        }
 
 
-def traverse_json_entries(data: Any, callback: Callable) -> int:
+def validate_groundtruth_uri(manifest: dict):
     """
-    Traverse json and execute callback for each top-level entry
-
-    Could later be optimized by accepting json uri instead of the full object
-    and using streaming request/parse APIs to exit early on validation error
-
+    Validate groundtruth_uri 
     Returns entries count if succeeded
     """
+    request_type = manifest.get('request_type', '')
+    uri_key = "groundtruth_uri"
+    uri = manifest.get(uri_key)
+    if uri is None:
+        return
+    try:
+        response = requests.get(uri, timeout=1)
+        response.raise_for_status()
 
-    entries_count = 0
+        entries_count = 0
+        data = response.json()
+        if isinstance(data, dict):
+            for k, v in data.items():
+                entries_count += 1
+                validate_groundtruth_entry(k, v, request_type)
+        else:
+            for v in data:
+                entries_count += 1
+                validate_groundtruth_entry("", v, request_type)
 
-    if isinstance(data, dict):
-        for k, v in data.items():
-            entries_count += 1
-            callback(k, v)
+    except (ValidationError, RequestException) as e:
+        raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
 
-    elif isinstance(data, list):
+    if entries_count == 0:
+        raise ValidationError(f"fetched {uri_key} is empty", Manifest)
+
+def validate_taskdata_uri(manifest: dict):
+    """
+    Validate taskdata_uri 
+    Returns entries count if succeeded
+    """
+    uri_key = "taskdata_uri"
+    uri = manifest.get(uri_key)
+    if uri is None:
+        return
+    try:
+        response = requests.get(uri, timeout=1)
+        response.raise_for_status()
+
+        entries_count = 0
+        data = response.json()
         for v in data:
             entries_count += 1
-            callback(None, v)
+            validate_taskdata_entry(v)
+    except (ValidationError, RequestException) as e:
+        raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
 
-    return entries_count
-
+    if entries_count == 0:
+        raise ValidationError(f"fetched {uri_key} is empty", Manifest)
 
 def validate_manifest_uris(manifest: dict):
     """ Fetch & validate manifest's remote objects """
-
-    request_type = manifest.get('request_type', '')
-
-    entry_validators = {
-        "groundtruth_uri": lambda k, v: validate_groundtruth_entry(k, v, request_type),
-        "taskdata_uri": lambda _, v: validate_taskdata_entry(v)
-    }
-
-    for uri_key, validate_entry in entry_validators.items():
-        uri = manifest.get(uri_key)
-
-        if uri is None:
-            continue
-
-        try:
-            response = requests.get(uri)
-            response.raise_for_status()
-
-            entries_count = traverse_json_entries(response.json(), validate_entry)
-        except (ValidationError, RequestException) as e:
-            raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
-
-        if entries_count == 0:
-            raise ValidationError(f"fetched {uri_key} is empty", Manifest)
+    validate_taskdata_uri(manifest)
+    validate_groundtruth_uri(manifest)
