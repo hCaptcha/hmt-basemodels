@@ -12,6 +12,8 @@ httpretty = "*"
 schematics = "*"
 marshmallow = "*"
 requests = "*"
+pydantic = "*"
+typing-extensions = "*"
 
 [requires]
 python_version = "3.6"
