@@ -4,10 +4,10 @@ from requests.exceptions import RequestException
 from typing_extensions import Literal
 from typing import Dict, Callable, Any, Union, Type, List, Optional
 from enum import Enum
-from uuid import UUID
+from uuid import UUID, uuid4
 from .data.groundtruth import validate_groundtruth_entry
 from .data.taskdata import validate_taskdata_entry
-from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl
+from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl
 from pydantic.fields import Field
 from decimal import Decimal
 
@@ -92,16 +92,12 @@ class Webhook(Model):
     # job_activated : List[str] = None
 
 
-class TaskData(Model):
+
+class TaskData(BaseModel):
     """ objects within taskdata list in Manifest """
+
     task_key: UUID
-    datapoint_uri: HttpUrl
-
-    @validator("datapoint_uri", always=True)
-    def validate_datapoint_uri(cls, value):
-        if len(value) < 10:
-            raise ValidationError("datapoint_uri need to be at least 10 char length.")
-
+    datapoint_uri: AnyHttpUrl
     datapoint_hash: str = Field(..., min_length=10, strip_whitespace=True)
 
 
@@ -202,36 +198,20 @@ class NestedManifest(Model):
 
 class Manifest(Model):
     """ The manifest description. """
+
     job_mode: Literal["batch", "online", "instant_delivery"]
-    
+
     # We will set a default dynamic value for job_api_key
-    job_api_key: Optional[UUID]
-    validate_job_api_key = validator('job_api_key', always=True, allow_reuse=True)(validate_uuid)
+    job_api_key: Optional[UUID] = None
 
     # We will set a default dynamic value for job_id
-    job_id: Optional[UUID]
-    validate_job_id = validator('job_id', always=True, allow_reuse=True)(validate_uuid)
+    job_id: UUID = uuid4()
 
-    job_total_tasks: Optional[int]
+    job_total_tasks: int
     multi_challenge_manifests: Optional[List[NestedManifest]]
     request_type: BaseJobTypesEnum
-    validate_request_type = validator('request_type', allow_reuse=True, \
-            always=True)(RequestTypeValidator().validate)
 
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
-
-    @validator('requester_restricted_answer_set', always=True)
-    def validate_requester_restricted_answer_set(cls, value, values, **kwargs):
-        """image_label_area_select should always have a single RAS set"""
-        # validation runs before other params, so need to handle missing case
-        if not ("request_type" in values):
-            raise ValidationError("request_type missing")
-
-        if values['request_type'] == BaseJobTypesEnum.image_label_area_select:
-            if not value or len(value.keys()) == 0:
-                value = {'label': {}}
-                values['requester_restricted_answer_set'] = value
-        return value
 
     requester_description: Optional[str]
     requester_max_repeats: int = 100
@@ -240,23 +220,8 @@ class Manifest(Model):
 
     requester_question_example: Optional[Union[HttpUrl, List[HttpUrl]]]
 
-    @validator('requester_question_example')
-    def validate_requester_question_example(cls, value, values, **kwargs):
-        # validation runs before other params, so need to handle missing case
-        if not ("request_type" in values):
-            raise ValidationError("request_type missing")
-
-        # based on https://github.com/hCaptcha/hmt-basemodels/issues/27#issuecomment-590706643
-        supports_lists = [
-            BaseJobTypesEnum.image_label_area_select, BaseJobTypesEnum.image_label_binary
-        ]
-
-        if isinstance(value, list) and not (values['request_type'] in supports_lists):
-            raise ValidationError("Lists are not allowed in this challenge type")
-        return value
-
     unsafe_content: bool = False
-    task_bid_price: Decimal
+    task_bid_price: float
     oracle_stake: Decimal
     expiration_date: Optional[int]
     requester_accuracy_target: float = 0.1
@@ -264,15 +229,15 @@ class Manifest(Model):
     hmtoken_addr: Optional[str]
     minimum_trust_server: float = 0.1
     minimum_trust_client: float = 0.1
-    recording_oracle_addr: str
-    reputation_oracle_addr: str
-    reputation_agent_addr: str
+    recording_oracle_addr: Optional[str]
+    reputation_oracle_addr: Optional[str]
+    reputation_agent_addr: Optional[str]
     requester_pgp_public_key: Optional[str]
     ro_uri: Optional[str]
     repo_uri: Optional[str]
-    batch_result_delivery_webhook: Optional[HttpUrl]
-    online_result_delivery_webhook: Optional[HttpUrl]
-    instant_result_delivery_webhook: Optional[HttpUrl]
+    batch_result_delivery_webhook: Optional[AnyHttpUrl]
+    online_result_delivery_webhook: Optional[AnyHttpUrl]
+    instant_result_delivery_webhook: Optional[AnyHttpUrl]
 
     request_config: Optional[RequestConfig]
 
@@ -280,28 +245,82 @@ class Manifest(Model):
     taskdata: Optional[List[TaskData]]
 
     # If taskdata is separately stored
-    taskdata_uri: Optional[HttpUrl]
+    taskdata_uri: Optional[AnyHttpUrl]
 
     # Groundtruth data is stored as a URL or optionally as an inlined json-serialized stringtype
-    groundtruth_uri: Optional[HttpUrl]
+    groundtruth_uri: Optional[AnyHttpUrl]
     groundtruth: Optional[str]
-
-    @validator('groundtruth', always=True)
-    def validate_groundtruth(cls, value, values):
-        if "groundtruth_uri" in values and "groundtruth" in values:
-            raise ValidationError("Specify only groundtruth_uri or groundtruth, not both.")
-        return value
 
     # internal config options for param tests etc.
     internal_config: Optional[InternalConfig]
 
-    # Configuration id -- XXX LEGACY
+    # Configuration id
     confcalc_configuration_id: Optional[str]
-    restricted_audience: Optional[Dict[str, Union[float, List[Dict[str, Dict[str, float]]]]]]
+    restricted_audience: Optional[
+        Dict[str, Union[float, List[Dict[str, Dict[str, float]]]]]
+    ] = {}
 
-    validate_taskdata_uri = validator('taskdata_uri', allow_reuse=True, always=True)(validator_taskdata_uri)
-    validate_taskdata = validator('taskdata', allow_reuse=True, always=True)(validator_taskdata_uri)
     webhook: Optional[Webhook]
+
+    ##### Validators
+
+    @validator("requester_min_repeats")
+    def validate_min_repeats(cls, v, values):
+        """ min repeats are required to be at least 4 if ilmc """
+        if values["request_type"] == "image_label_multiple_choice":
+            return max(v, 4)
+        return v
+
+    @validator("groundtruth", always=True)
+    def validate_groundtruth(cls, value, values):
+        if "groundtruth_uri" in values and "groundtruth" in values:
+            raise ValidationError(
+                "Specify only groundtruth_uri or groundtruth, not both."
+            )
+        return value
+
+    @validator("requester_restricted_answer_set", always=True)
+    def validate_requester_restricted_answer_set(cls, value, values, **kwargs):
+        """image_label_area_select should always have a single RAS set"""
+        # validation runs before other params, so need to handle missing case
+        if not ("request_type" in values):
+            raise ValidationError("request_type missing")
+
+        if values["request_type"] == BaseJobTypesEnum.image_label_area_select:
+            if not value or len(value.keys()) == 0:
+                value = {"label": {}}
+                values["requester_restricted_answer_set"] = value
+        return value
+
+    @validator("requester_question_example")
+    def validate_requester_question_example(cls, value, values, **kwargs):
+        # validation runs before other params, so need to handle missing case
+        if not ("request_type" in values):
+            raise ValidationError("request_type missing")
+
+        # based on https://github.com/hCaptcha/hmt-basemodels/issues/27#issuecomment-590706643
+        supports_lists = [
+            BaseJobTypesEnum.image_label_area_select,
+            BaseJobTypesEnum.image_label_binary,
+        ]
+
+        if isinstance(value, list) and not (values["request_type"] in supports_lists):
+            raise ValidationError("Lists are not allowed in this challenge type")
+        return value
+
+    validate_taskdata_uri = validator("taskdata_uri", allow_reuse=True, always=True)(
+        validator_taskdata_uri
+    )
+    validate_taskdata = validator("taskdata", allow_reuse=True, always=True)(
+        validator_taskdata_uri
+    )
+    validate_request_type = validator("request_type", allow_reuse=True, always=True)(
+        RequestTypeValidator().validate
+    )
+    validate_job_api_key = validator("job_api_key", always=True, allow_reuse=True)(
+        validate_uuid
+    )
+    validate_job_id = validator("job_id", always=True, allow_reuse=True)(validate_uuid)
 
     class Config:
         arbitrary_types_allowed = True
@@ -309,7 +328,7 @@ class Manifest(Model):
 
 def validate_groundtruth_uri(manifest: dict):
     """
-    Validate groundtruth_uri 
+    Validate groundtruth_uri
     Returns entries count if succeeded
     """
     request_type = manifest.get('request_type', '')
@@ -340,7 +359,7 @@ def validate_groundtruth_uri(manifest: dict):
 
 def validate_taskdata_uri(manifest: dict):
     """
-    Validate taskdata_uri 
+    Validate taskdata_uri
     Returns entries count if succeeded
     """
     uri_key = "taskdata_uri"

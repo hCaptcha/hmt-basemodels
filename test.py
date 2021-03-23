@@ -125,7 +125,8 @@ def a_manifest(number_of_tasks=100,
     return manifest
 
 
-def a_nested_manifest(request_type=IMAGE_LABEL_BINARY, minimum_trust=.1,
+def a_nested_manifest(request_type=IMAGE_LABEL_BINARY,
+                      minimum_trust=.1,
                       request_config=None) -> Any:
     model = {
         'requester_restricted_answer_set': {
@@ -156,7 +157,6 @@ def a_nested_manifest(request_type=IMAGE_LABEL_BINARY, minimum_trust=.1,
 
 class ManifestTest(unittest.TestCase):
     """Manifest specific tests, validating that models work the way we want"""
-
     def test_basic_construction(self):
         """Tests that manifest can validate the test manifest properly."""
         a_manifest()
@@ -178,28 +178,27 @@ class ManifestTest(unittest.TestCase):
 
     def test_can_make_request_config_job(self):
         """Test that jobs with valid request_config parameter work"""
-        manifest = a_manifest(
-            request_type='image_label_area_select', request_config={'shape_type': 'point'})
+        manifest = a_manifest(request_type='image_label_area_select',
+                              request_config={'shape_type': 'point'})
 
     def test_can_make_nested_request_config_job_single_nest(self):
         """Test that jobs with valid nested request_config parameter work"""
-        nested_manifest = a_nested_manifest(
-            request_type='image_label_area_select', request_config={'shape_type': 'point'})
+        nested_manifest = a_nested_manifest(request_type='image_label_area_select',
+                                            request_config={'shape_type': 'point'})
 
-        manifest = a_manifest(
-            request_type='multi_challenge', multi_challenge_manifests=[nested_manifest])
+        manifest = a_manifest(request_type='multi_challenge',
+                              multi_challenge_manifests=[nested_manifest])
 
     def test_can_make_nested_request_config_job_multiple_nest(self):
         """Test that jobs with multiple valid nested request_config parameters work"""
-        nested_manifest = a_nested_manifest(
-            request_type='image_label_area_select', request_config={'shape_type': 'point'})
+        nested_manifest = a_nested_manifest(request_type='image_label_area_select',
+                                            request_config={'shape_type': 'point'})
 
-        nested_manifest_2 = a_nested_manifest(
-            request_type='image_label_area_select', request_config={'shape_type': 'point'})
+        nested_manifest_2 = a_nested_manifest(request_type='image_label_area_select',
+                                              request_config={'shape_type': 'point'})
 
-        manifest = a_manifest(
-            request_type='multi_challenge',
-            multi_challenge_manifests=[nested_manifest, nested_manifest_2])
+        manifest = a_manifest(request_type='multi_challenge',
+                              multi_challenge_manifests=[nested_manifest, nested_manifest_2])
 
     def test_can_bad_request_config(self):
         """Test that an invalid shape_type in request_config will fail"""
@@ -241,8 +240,8 @@ class ManifestTest(unittest.TestCase):
         else:
             func()
 
-        self.assertGreater(
-            len(manifest.to_primitive()['requester_restricted_answer_set'].keys()), 0)
+        self.assertGreater(len(manifest.to_primitive()['requester_restricted_answer_set'].keys()),
+                           0)
 
     def test_confcalc_configuration_id(self):
         """ Test that key is in manifest """
@@ -337,56 +336,53 @@ class ManifestTest(unittest.TestCase):
                     "min_shapes_per_image": 1,
                     "max_shapes_per_image": 4
                 }
-            },
-                                          {
-                                              "request_type": "image_label_multiple_choice",
-                                              "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                                              "requester_question": {
-                                                  "en": "Select the corresponding label."
-                                              },
-                                              "requester_restricted_answer_set": {
-                                                  "print": {
-                                                      "en": "Print"
-                                                  },
-                                                  "hand-writing": {
-                                                      "en": "Hand Writing"
-                                                  }
-                                              },
-                                              "request_config": {
-                                                  "multiple_choice_max_choices": 1
-                                              }
-                                          },
-                                          {
-                                              "request_type": "image_label_multiple_choice",
-                                              "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                                              "requester_question": {
-                                                  "en": "Select the corresponding labels."
-                                              },
-                                              "requester_restricted_answer_set": {
-                                                  "top-bottom": {
-                                                      "en": "Top to Bottom"
-                                                  },
-                                                  "bottom-top": {
-                                                      "en": "Bottom to Top"
-                                                  },
-                                                  "left-right": {
-                                                      "en": "Left to Right"
-                                                  },
-                                                  "right-left": {
-                                                      "en": "Right to Left"
-                                                  }
-                                              },
-                                              "request_config": {
-                                                  "multiple_choice_max_choices": 1
-                                              }
-                                          },
-                                          {
-                                              "request_type": "image_label_text",
-                                              "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                                              "requester_question": {
-                                                  "en": "Please enter the word in the image."
-                                              }
-                                          }],
+            }, {
+                "request_type": "image_label_multiple_choice",
+                "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+                "requester_question": {
+                    "en": "Select the corresponding label."
+                },
+                "requester_restricted_answer_set": {
+                    "print": {
+                        "en": "Print"
+                    },
+                    "hand-writing": {
+                        "en": "Hand Writing"
+                    }
+                },
+                "request_config": {
+                    "multiple_choice_max_choices": 1
+                }
+            }, {
+                "request_type": "image_label_multiple_choice",
+                "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+                "requester_question": {
+                    "en": "Select the corresponding labels."
+                },
+                "requester_restricted_answer_set": {
+                    "top-bottom": {
+                        "en": "Top to Bottom"
+                    },
+                    "bottom-top": {
+                        "en": "Bottom to Top"
+                    },
+                    "left-right": {
+                        "en": "Left to Right"
+                    },
+                    "right-left": {
+                        "en": "Right to Left"
+                    }
+                },
+                "request_config": {
+                    "multiple_choice_max_choices": 1
+                }
+            }, {
+                "request_type": "image_label_text",
+                "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
+                "requester_question": {
+                    "en": "Please enter the word in the image."
+                }
+            }],
             "taskdata": [{
                 "datapoint_hash": "sha1:5daf66c6031df7f8913bfa0b52e53e3bcd42aab3",
                 "datapoint_uri": "http://test.com/task.jpg",
@@ -607,12 +603,11 @@ class TestValidateManifestUris(unittest.TestCase):
             "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
             "datapoint_uri": "https://domain.com/file1.jpg",
             "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-        },
-                {
-                    "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
-                    "datapoint_uri": "https://domain.com/file2.jpg",
-                    "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-                }]
+        }, {
+            "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
+            "datapoint_uri": "https://domain.com/file2.jpg",
+            "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
+        }]
 
         self.register_http_response(uri, manifest, body)
 
@@ -641,12 +636,11 @@ class TestValidateManifestUris(unittest.TestCase):
             "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
             "datapoint_uri": "https://domain.com/file1.jpg",
             "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-        },
-                    {
-                        "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
-                        "datapoint_uri": "https://domain.com/file2.jpg",
-                        "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
-                    }]
+        }, {
+            "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
+            "datapoint_uri": "https://domain.com/file2.jpg",
+            "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
+        }]
 
         groundtruth = {
             "https://domain.com/123/file1.jpeg": ["false", "false", "false"],
