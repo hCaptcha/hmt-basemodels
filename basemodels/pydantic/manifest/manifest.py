@@ -202,7 +202,7 @@ class Manifest(Model):
     job_mode: Literal["batch", "online", "instant_delivery"]
 
     # We will set a default dynamic value for job_api_key
-    job_api_key: Optional[UUID] = None
+    job_api_key: Optional[UUID]
 
     # We will set a default dynamic value for job_id
     job_id: UUID = uuid4()
