@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM ubuntu:focal
 
 WORKDIR /work
 RUN apt-get update -y && \
@@ -8,9 +8,10 @@ RUN apt-get update -y && \
 
 ENV LANG C.UTF-8
 
-COPY Pipfile Pipfile.lock /work/
-RUN pip3 install pipenv
-RUN pipenv install --system --deploy --dev
+RUN pip3 install poetry
+
+COPY pyproject.toml poetry.lock ./
+RUN poetry config virtualenvs.create false && poetry install -n
 
 COPY yapf.cfg test.py /work/
 COPY basemodels /work/basemodels/
