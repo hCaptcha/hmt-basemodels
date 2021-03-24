@@ -410,6 +410,18 @@ class ManifestTest(unittest.TestCase):
         validate_func(model)()
         self.assertTrue("webhook" in model.to_primitive())
 
+    def test_invalid_example_images(self):
+        """ validate that only certain types of request_types can specify example images """
+        manifest = a_manifest().to_primitive()
+        manifest['request_type'] = "image_label_multiple_choice"
+        manifest["requester_question_example"] = ['a']
+
+        with self.assertRaises(validation_base_errors[test_mode]):
+            validate_func(create_manifest(manifest))()
+
+        del manifest["requester_question_example"]
+        validate_func(create_manifest(manifest))()
+
 
 class ViaTest(unittest.TestCase):
     def test_via_legacy_case(self):
@@ -474,6 +486,9 @@ class ViaTest(unittest.TestCase):
         self.assertEqual(len(parsed["datapoints"]), 1)
         self.assertEqual(parsed["version"], 1)
         self.assertIn("dog", parsed["datapoints"][0]["class_attributes"])
+
+
+
 
 
 @httpretty.activate

@@ -274,7 +274,7 @@ class Manifest(Model):
     @validator("groundtruth", always=True)
     def validate_groundtruth(cls, value, values):
         if "groundtruth_uri" in values and "groundtruth" in values:
-            raise ValidationError(
+            raise ValueError(
                 "Specify only groundtruth_uri or groundtruth, not both."
             )
         return value
@@ -284,7 +284,7 @@ class Manifest(Model):
         """image_label_area_select should always have a single RAS set"""
         # validation runs before other params, so need to handle missing case
         if not ("request_type" in values):
-            raise ValidationError("request_type missing")
+            raise ValueError("request_type missing")
 
         if values["request_type"] == BaseJobTypesEnum.image_label_area_select:
             if not value or len(value.keys()) == 0:
@@ -296,7 +296,7 @@ class Manifest(Model):
     def validate_requester_question_example(cls, value, values, **kwargs):
         # validation runs before other params, so need to handle missing case
         if not ("request_type" in values):
-            raise ValidationError("request_type missing")
+            raise ValueError("request_type missing")
 
         # based on https://github.com/hCaptcha/hmt-basemodels/issues/27#issuecomment-590706643
         supports_lists = [
@@ -305,7 +305,7 @@ class Manifest(Model):
         ]
 
         if isinstance(value, list) and not (values["request_type"] in supports_lists):
-            raise ValidationError("Lists are not allowed in this challenge type")
+            raise ValueError("Lists are not allowed in this challenge type")
         return value
 
     validate_taskdata_uri = validator("taskdata_uri", allow_reuse=True, always=True)(

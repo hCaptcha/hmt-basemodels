@@ -13,8 +13,4 @@ RUN pip3 install poetry
 COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false && poetry install -n --no-root
 
-COPY yapf.cfg test.py /work/
-COPY basemodels /work/basemodels/
-COPY bin /work/bin/
-
-CMD sh
+COPY . .

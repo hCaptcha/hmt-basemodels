@@ -11,3 +11,5 @@ src/**
 .vscode
 .vscode/**
 docker-compose
+static
+Dockerfile

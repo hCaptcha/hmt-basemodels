@@ -1,6 +1,9 @@
 from unittest import TestCase, mock
+from copy import deepcopy
 
-from basemodels.pydantic.manifest.manifest import Manifest
+from pydantic.error_wrappers import ValidationError
+from basemodels.pydantic import Manifest
+
 
 SIMPLE = {
     "job_mode": "batch",
@@ -21,7 +24,6 @@ SIMPLE = {
     "taskdata_uri": "https://hmt-jovial-lamport.hcaptcha.com/pyhcaptcha-client/taskdata/sha1:97d170e1550eee4afc0af065b78cda302a97674c.json",
     "job_total_tasks": 0,
     "job_api_key": "417714f0-7ce6-412b-b394-0d2ae58a8c6d",
-    "requester_question_example": [],
     "restricted_audience": {
         "sitekey": [
             {"dfe03e7c-f417-4726-8b14-ae033a3cc66e": {"score": 1}},
@@ -32,5 +34,13 @@ SIMPLE = {
 
 
 class PydanticTest(TestCase):
-    def test_example_images(self):
-        Manifest.parse_obj(SIMPLE)
+    def setUp(self):
+        self.m = deepcopy(SIMPLE)
+
+    def test_example_err(self):
+        self.m["requester_question_example"] = []
+        with self.assertRaises(ValidationError):
+            Manifest.parse_obj(self.m)
+
+    def test_working(self):
+        Manifest.parse_obj(self.m)
