@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "hmt-basemodels"
+version = "0.1.1"
+description = ""
+authors = ["Intuition Machines, Inc <support@hcaptcha.com>"]
+packages = [
+    { include = "basemodels" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+schematics = "^2.1.0"
+marshmallow = "^3.10.0"
+requests = "^2.25.1"
+pydantic = "^1.8.1"
+
+[tool.poetry.dev-dependencies]
+httpretty = "^1.0.5"
+mypy = "^0.812"
+yapf = "^0.31.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

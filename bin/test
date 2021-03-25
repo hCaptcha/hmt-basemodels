@@ -1,4 +1,11 @@
 #!/bin/sh
 set -exu
 
-python3 test.py
+cd $(dirname $0)/..
+
+# captures all of the files in the tests dir
+python3 -m unittest discover tests
+
+# runs tests on both models, has a special __main__
+export PYTHONPATH=$(pwd)
+python3 tests/both_models.py
