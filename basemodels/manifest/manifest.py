@@ -9,6 +9,7 @@ from schematics.types import StringType, DecimalType, BooleanType, IntType, Dict
 
 from .data.groundtruth import validate_groundtruth_entry
 from .data.taskdata import validate_taskdata_entry
+from .data.preprocess import Preprocess
 
 BASE_JOB_TYPES = [
     "image_label_binary",
