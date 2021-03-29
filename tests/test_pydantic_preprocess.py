@@ -27,7 +27,7 @@ class PipelineTest(unittest.TestCase):
             Preprocess(pipeline=Pipeline.FaceBlurPipeline, config=1)
 
 
-    def test_preprocess_to_doct(self):
+    def test_preprocess_to_dict(self):
         config = { "radius": 3 }
         p = Preprocess(pipeline=Pipeline.FaceBlurPipeline, config=config)
 
