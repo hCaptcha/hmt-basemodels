@@ -205,7 +205,7 @@ class Manifest(Model):
     job_api_key: Optional[UUID]
 
     # We will set a default dynamic value for job_id
-    job_id: UUID = uuid4()
+    job_id: UUID = Field(default_factory=uuid4)
 
     job_total_tasks: int
     multi_challenge_manifests: Optional[List[NestedManifest]]
