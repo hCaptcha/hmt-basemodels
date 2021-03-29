@@ -44,3 +44,8 @@ class PydanticTest(TestCase):
 
     def test_working(self):
         Manifest.parse_obj(self.m)
+
+    def test_unique_id(self):
+        m1 = deepcopy(SIMPLE)
+        m2 = deepcopy(SIMPLE)
+        self.assertNotEqual(str(Manifest(**m1).job_id), str(Manifest(**m2).job_id))
