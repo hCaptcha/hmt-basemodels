@@ -1,5 +1,5 @@
 from schematics.models import Model, ValidationError
-from schematics.types import ListType, ModelType, UUIDType, URLType, StringType
+from schematics.types import ListType, ModelType, UUIDType, URLType, StringType, DictType
 
 
 class TaskDataEntry(Model):
@@ -22,6 +22,7 @@ class TaskDataEntry(Model):
     task_key = UUIDType()
     datapoint_uri = URLType(required=True, min_length=10)
     datapoint_hash = StringType()
+    metadata = DictType(StringType(required=False, max_length=256), required=False)
 
 
 def validate_taskdata_entry(value: dict):

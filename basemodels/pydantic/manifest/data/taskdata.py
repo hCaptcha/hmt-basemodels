@@ -32,7 +32,7 @@ class TaskDataEntry(BaseModel):
         if len(value) < 10:
             raise ValidationError("datapoint_uri need to be at least 10 char length.")
 
-    @pydantic.validator("metadata")
+    @validator("metadata")
     def validate_metadata(cls, value):
         if value is None:
             return value
