@@ -32,7 +32,21 @@ class TaskDataEntry(BaseModel):
         if len(value) < 10:
             raise ValidationError("datapoint_uri need to be at least 10 char length.")
 
+    @pydantic.validator("metadata")
+    def validate_metadata(cls, value):
+        if value is None:
+            return value
+
+        if len(value) > 10:
+            raise ValidationError("10 key max. in metadata")
+
+        if any(len(str(v)) > 255 for v in value.values()):
+            raise ValidationError("256 chars max. in medatada value")
+
+        return value
+
     datapoint_hash: Optional[str]
+    metadata: Optional[Dict[str,Optional[str]]]
 
 
 def validate_taskdata_entry(value: dict):
