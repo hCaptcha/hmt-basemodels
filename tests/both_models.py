@@ -724,6 +724,9 @@ class TaskEntryTest(unittest.TestCase):
         taskdata.get("metadata")["key_1"] = ""
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 
+        taskdata.get("metadata")["key_1"] = 1.1
+        self.assertIsNone(TaskDataEntry(taskdata).validate())
+
         taskdata.pop("metadata")
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 

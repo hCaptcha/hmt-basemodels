@@ -69,3 +69,16 @@ class PydanticTest(TestCase):
         with self.assertRaises(ValidationError):
             taskdata.get("metadata")["key_1"] += 256 * "a"
             TaskDataEntry(**taskdata)
+
+        taskdata.get("metadata")["key_1"] = 1.1
+        TaskDataEntry(**taskdata)
+
+        taskdata.get("metadata")["key_1"] = None
+        TaskDataEntry(**taskdata)
+
+        taskdata.get("metadata")["key_1"] = ""
+        TaskDataEntry(**taskdata)
+
+        taskdata.pop("metadata")
+        TaskDataEntry(**taskdata)
+
