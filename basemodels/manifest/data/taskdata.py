@@ -30,6 +30,11 @@ class TaskDataEntry(Model):
       ]),
     required=False)
 
+    def validate_metadata(self, data, value):
+        if len(str(value)) > 1024:
+            raise ValidationError("metadata should be < 1024")
+        return value
+
 
 def validate_taskdata_entry(value: dict):
     """ Validate taskdata entry """

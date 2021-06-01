@@ -714,18 +714,18 @@ class TaskEntryTest(unittest.TestCase):
         taskdata = deepcopy(TASK)
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 
-        with self.assertRaises(schematics.exceptions.DataError):
-            taskdata.get("metadata")["key_1"] += 256 * "a"
-            r = TaskDataEntry(taskdata).validate()
-
         taskdata.get("metadata")["key_1"] = None
+        self.assertIsNone(TaskDataEntry(taskdata).validate())
+
+        taskdata.get("metadata")["key_1"] = 1.1
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 
         taskdata.get("metadata")["key_1"] = ""
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 
-        taskdata.get("metadata")["key_1"] = 1.1
-        self.assertIsNone(TaskDataEntry(taskdata).validate())
+        with self.assertRaises(schematics.exceptions.DataError):
+            taskdata.get("metadata")["key_1"] += 1024 * "a"
+            r = TaskDataEntry(taskdata).validate()
 
         taskdata.pop("metadata")
         self.assertIsNone(TaskDataEntry(taskdata).validate())

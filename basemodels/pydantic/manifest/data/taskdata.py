@@ -39,8 +39,8 @@ class TaskDataEntry(BaseModel):
         if len(value) > 10:
             raise ValidationError("10 key max. in metadata")
 
-        if any(len(str(v)) > 255 for v in value.values()):
-            raise ValidationError("256 chars max. in medatada value")
+        if len(str(value)) > 1024:
+            raise ValidationError("metadata should be < 1024")
 
         return value
 

@@ -66,10 +66,6 @@ class PydanticTest(TestCase):
         taskdata = deepcopy(TASK)
         TaskDataEntry(**taskdata)
 
-        with self.assertRaises(ValidationError):
-            taskdata.get("metadata")["key_1"] += 256 * "a"
-            TaskDataEntry(**taskdata)
-
         taskdata.get("metadata")["key_1"] = 1.1
         TaskDataEntry(**taskdata)
 
@@ -78,6 +74,10 @@ class PydanticTest(TestCase):
 
         taskdata.get("metadata")["key_1"] = ""
         TaskDataEntry(**taskdata)
+
+        with self.assertRaises(ValidationError):
+            taskdata.get("metadata")["key_1"] += 1024 * "a"
+            TaskDataEntry(**taskdata)
 
         taskdata.pop("metadata")
         TaskDataEntry(**taskdata)
