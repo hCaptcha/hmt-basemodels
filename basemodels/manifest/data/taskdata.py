@@ -1,5 +1,5 @@
 from schematics.models import Model, ValidationError
-from schematics.types import ListType, ModelType, UUIDType, URLType, StringType
+from schematics.types import ListType, ModelType, UUIDType, URLType, StringType, DictType, IntType, FloatType, UnionType
 
 
 class TaskDataEntry(Model):
@@ -22,6 +22,18 @@ class TaskDataEntry(Model):
     task_key = UUIDType()
     datapoint_uri = URLType(required=True, min_length=10)
     datapoint_hash = StringType()
+    metadata = DictType(
+      UnionType([
+        StringType(required=False, max_length=256),
+        FloatType,
+        IntType
+      ]),
+    required=False)
+
+    def validate_metadata(self, data, value):
+        if len(str(value)) > 1024:
+            raise ValidationError("metadata should be < 1024")
+        return value
 
 
 def validate_taskdata_entry(value: dict):
