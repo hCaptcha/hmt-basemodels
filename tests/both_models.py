@@ -6,6 +6,7 @@ import os
 import sys
 import schematics
 import basemodels
+from uuid import uuid4
 from copy import deepcopy
 from basemodels.manifest.data.taskdata import TaskDataEntry
 
@@ -14,6 +15,9 @@ import basemodels.pydantic as pydantic_basemodels
 import unittest
 import httpretty
 import json
+
+from basemodels.manifest.restricted_audience import RestrictedAudience
+from basemodels.pydantic.manifest.restricted_audience import RestrictedAudience as PyRestrictedAudience
 
 CALLBACK_URL = "http://google.com/webback"
 FAKE_URL = "http://google.com/fake"
@@ -300,11 +304,18 @@ class ManifestTest(unittest.TestCase):
     def test_restricted_audience(self):
         """ Test that restricted audience is in the Manifest """
         manifest = a_manifest()
-        manifest.restricted_audience = {
+
+        restricted_audience = {
             "lang": [{"en-us": {"score": 0.9}}],
             "confidence": [{"minimum_client_confidence": {"score": 0.9}}],
             "min_difficulty": 2,
         }
+        
+        if test_mode == PYDANTIC:
+            manifest.restricted_audience = PyRestrictedAudience(**restricted_audience)
+        else:
+            manifest.restricted_audience = restricted_audience
+
         validate_func(manifest)()
         self.assertTrue("restricted_audience" in manifest.to_primitive())
         self.assertTrue(
@@ -327,6 +338,141 @@ class ManifestTest(unittest.TestCase):
         self.assertEqual(
             2, manifest.to_primitive()["restricted_audience"]["min_difficulty"]
         )
+
+    def test_restricted_audience_only(self):
+        def assert_raises(data):
+            if test_mode == SCHEMATICS:
+                with self.assertRaises(schematics.exceptions.BaseError):
+                    RestrictedAudience(data).validate()
+            else:
+                with self.assertRaises(ValidationError):
+                    PyRestrictedAudience(**data)
+
+        for data in [
+            {"lang": "us"},
+            {"lang": [{"US": {"score": 1}}]},
+            {"lang": [{"US": "US"}]},
+            {"lang": [{"us": {"nonsense": 1}}]},
+            {"lang": [{"us": {"score": -0.1}}]}
+        ]:
+            assert_raises(data)
+
+        for data in [
+            {"country": "us"},
+            {"country": [{"US": {"score": 1}}]},
+            {"country": [{"US": "US"}]},
+            {"country": [{"us": {"nonsense": 1}}]},
+            {"country": [{"us": {"score": -0.1}}]},
+            {"country": [{"us": {"score": -0.1}}]}
+        ]:
+            assert_raises(data)
+
+        for data in [
+            {"browser": "desktop"},
+            {"browser": [{"Desktop": {"score": 1}}]},
+            {"browser": [{"desktop": "US"}]},
+            {"browser": [{"desktop": {"nonsense": 1}}]},
+            {"browser": [{"desktop": {"score": -0.1}}]}
+        ]:
+            assert_raises(data)
+
+        sitekey = "9d98b147-dc5a-4ea4-82cf-0ced5b2434d2"
+        for data in [
+            {"sitekey": "sitekey"},
+            {"sitekey": [{"9d98b147": {"score": 1}}]},
+            {"sitekey": [{sitekey.upper(): {"score": 1}}]},
+            {"sitekey": [{sitekey: 1}]},
+            {"sitekey": [{sitekey: {"nonsense": 1}}]},
+            {"sitekey": [{sitekey: {"score": -0.1}}]}
+        ]:
+            assert_raises(data)
+
+        for data in [
+            {"serverdomain": "serverdomain"},
+            {"serverdomain": [{"serverdomain": 1}]},
+            {"serverdomain": [{"serverdomain": {"nonsense": 1}}]},
+            {"serverdomain": [{"serverdomain": {"score": -0.1}}]}
+        ]:
+            assert_raises(data)
+
+        for data in [
+            {"confidence": "confidence"},
+            {"confidence": [{"MINIMUM_client_confidence": {"score": 1}}]},
+            {"confidence": [{"minimum_client_confidence": 1}]},
+            {"confidence": [{"minimum_client_confidence": {"nonsense": 1}}]},
+            {"confidence": [{"minimum_client_confidence": {"score": -0.1}}]}
+        ]:
+            assert_raises(data)
+
+        for data in [
+            {"min_difficulty": "min_difficulty"},
+            {"min_difficulty": -1},
+            {"min_difficulty": 5},
+            {"min_difficulty": 1.1}
+        ]:
+            assert_raises(data)
+
+        for data in [
+            {"min_user_score": "min_user_score"},
+            {"min_user_score": -0.1},
+            {"min_user_score": 1.1},
+        ]:
+            assert_raises(data)
+
+        for data in [
+            {"max_user_score": "max_user_score"},
+            {"max_user_score": -0.1},
+            {"max_user_score": 1.1},
+        ]:
+            assert_raises(data)
+
+        for data in [
+            {"launch_group_id": "launch_group_id"},
+            {"launch_group_id": -3},
+            {"launch_group_id": 1.1},
+        ]:
+            assert_raises(data)
+
+        data = {
+            "lang": [
+                {"us": {"score": 0}},
+                {"es": {"score": 0.5}},
+                {"en-us": {"score": 1}}
+            ],
+            "country": [
+                {"us": {"score": 0}},
+                {"es": {"score": 0.5}},
+                {"it": {"score": 1}}
+            ],
+            "browser": [
+                {"tablet": {"score": 0.5}},
+                {"desktop": {"score": 0}},
+                {"mobile": {"score": 1}}
+            ],
+            "sitekey": [
+                {str(uuid4()): {"score": 0.5}},
+                {str(uuid4()): {"score": 0}},
+                {str(uuid4()): {"score": 1}}
+            ],
+            "serverdomain": [
+                {"1hcaptcha.com": {"score": 0.5}},
+                {"2hcaptcha.com": {"score": 0}},
+                {"3hcaptcha.com": {"score": 1}}
+            ],
+            "confidence": [
+                {"minimum_client_confidence": {"score": 0.5}}
+            ],
+            "min_difficulty": 2,
+            "min_user_score": 0,
+            "max_user_score": 0.3,
+            "launch_group_id": 101
+        }
+
+        if test_mode == SCHEMATICS:
+            RestrictedAudience(data).validate()
+        else:
+            PyRestrictedAudience(**data)
+
 
     def test_realistic_multi_challenge_example(self):
         """ validates a realistic multi_challenge manifest """

@@ -10,6 +10,7 @@ from schematics.types import StringType, DecimalType, BooleanType, IntType, Dict
 from .data.groundtruth import validate_groundtruth_entry
 from .data.taskdata import validate_taskdata_entry
 from .data.preprocess import Preprocess
+from .restricted_audience import RestrictedAudience
 
 BASE_JOB_TYPES = [
     "image_label_binary",
@@ -247,7 +248,7 @@ class Manifest(Model):
     # Configuration id -- XXX LEGACY
     confcalc_configuration_id = StringType(required=False)
 
-    restricted_audience = DictType(UnionType([FloatType, ListType(DictType(DictType(FloatType)))]))
+    restricted_audience = ModelType(RestrictedAudience, required=True, default={})
 
     def validate_taskdata_uri(self, data, value):
         if data.get('taskdata') and len(data.get('taskdata')) > 0 and data.get('taskdata_uri'):

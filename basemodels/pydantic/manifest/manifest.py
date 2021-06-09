@@ -10,6 +10,7 @@ from .data.taskdata import validate_taskdata_entry
 from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl
 from pydantic.fields import Field
 from decimal import Decimal
+from .restricted_audience import RestrictedAudience
 
 # Validator function for taskdata and taskdata_uri fields
 def validator_taskdata_uri(cls, value, values, **kwargs):
@@ -256,9 +257,7 @@ class Manifest(Model):
 
     # Configuration id
     confcalc_configuration_id: Optional[str]
-    restricted_audience: Optional[
-        Dict[str, Union[float, List[Dict[str, Dict[str, float]]]]]
-    ] = {}
+    restricted_audience: Optional[RestrictedAudience] = {}
 
     webhook: Optional[Webhook]
 
