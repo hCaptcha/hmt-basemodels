@@ -3,6 +3,7 @@ from copy import deepcopy
 
 from pydantic.error_wrappers import ValidationError
 from basemodels.pydantic import Manifest
+from basemodels.pydantic.manifest.data.taskdata import TaskDataEntry
 
 
 SIMPLE = {
@@ -32,6 +33,16 @@ SIMPLE = {
     },
 }
 
+TASK = {
+    "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
+    "datapoint_uri": "https://domain.com/file1.jpg",
+    "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
+    "metadata": {
+        "key_1": "value_1",
+        "key_2": "value_2",
+    }
+}
+
 
 class PydanticTest(TestCase):
     def setUp(self):
@@ -49,3 +60,25 @@ class PydanticTest(TestCase):
         m1 = deepcopy(SIMPLE)
         m2 = deepcopy(SIMPLE)
         self.assertNotEqual(str(Manifest(**m1).job_id), str(Manifest(**m2).job_id))
+
+    def test_taskdata(self):
+        """ Test taskdata """
+        taskdata = deepcopy(TASK)
+        TaskDataEntry(**taskdata)
+
+        taskdata.get("metadata")["key_1"] = 1.1
+        TaskDataEntry(**taskdata)
+
+        taskdata.get("metadata")["key_1"] = None
+        TaskDataEntry(**taskdata)
+
+        taskdata.get("metadata")["key_1"] = ""
+        TaskDataEntry(**taskdata)
+
+        with self.assertRaises(ValidationError):
+            taskdata.get("metadata")["key_1"] += 1024 * "a"
+            TaskDataEntry(**taskdata)
+
+        taskdata.pop("metadata")
+        TaskDataEntry(**taskdata)
+

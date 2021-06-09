@@ -1,7 +1,6 @@
-from typing import Dict
+from typing import Dict, Optional, Union
 from pydantic import BaseModel, HttpUrl, validate_model, ValidationError, validator
 from uuid import UUID
-from typing import Optional
 
 # New type
 class AtLeastTenCharUrl(HttpUrl):
@@ -32,7 +31,21 @@ class TaskDataEntry(BaseModel):
         if len(value) < 10:
             raise ValidationError("datapoint_uri need to be at least 10 char length.")
 
+    @validator("metadata")
+    def validate_metadata(cls, value):
+        if value is None:
+            return value
+
+        if len(value) > 10:
+            raise ValidationError("10 key max. in metadata")
+
+        if len(str(value)) > 1024:
+            raise ValidationError("metadata should be < 1024")
+
+        return value
+
     datapoint_hash: Optional[str]
+    metadata: Optional[Dict[str,Optional[Union[str,int,float]]]]
 
 
 def validate_taskdata_entry(value: dict):

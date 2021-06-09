@@ -7,6 +7,8 @@ import sys
 import schematics
 import basemodels
 from uuid import uuid4
+from copy import deepcopy
+from basemodels.manifest.data.taskdata import TaskDataEntry
 
 # New pydantic model
 import basemodels.pydantic as pydantic_basemodels
@@ -159,6 +161,15 @@ def a_nested_manifest(
 
     return manifest
 
+TASK = {
+    "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
+    "datapoint_uri": "https://domain.com/file1.jpg",
+    "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
+    "metadata": {
+        "key_1": "value_1",
+        "key_2": "value_2",
+    }
+}
 
 class ManifestTest(unittest.TestCase):
     """Manifest specific tests, validating that models work the way we want"""
@@ -842,6 +853,30 @@ class TestValidateManifestUris(unittest.TestCase):
         manifest = create_manifest(model)
         validate_func(manifest)()
         self.assertTrue(True)
+
+
+class TaskEntryTest(unittest.TestCase):
+    def test_valid_entry_is_true(self):
+        taskdata = deepcopy(TASK)
+        self.assertIsNone(TaskDataEntry(taskdata).validate())
+
+        taskdata.get("metadata")["key_1"] = None
+        self.assertIsNone(TaskDataEntry(taskdata).validate())
+
+        taskdata.get("metadata")["key_1"] = 1.1
+        self.assertIsNone(TaskDataEntry(taskdata).validate())
+
+        taskdata.get("metadata")["key_1"] = ""
+        self.assertIsNone(TaskDataEntry(taskdata).validate())
+
+        with self.assertRaises(schematics.exceptions.DataError):
+            taskdata.get("metadata")["key_1"] += 1024 * "a"
+            r = TaskDataEntry(taskdata).validate()
+
+        taskdata.pop("metadata")
+        self.assertIsNone(TaskDataEntry(taskdata).validate())
+
+
 
 
 if __name__ == "__main__":
