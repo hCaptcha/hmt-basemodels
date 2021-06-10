@@ -40,6 +40,9 @@ class RestrictedAudience(Model):
 
     launch_group_id = IntType(required=False, min_value=0)
 
+    class Options:
+        serialize_when_none=False
+
     def keys_iterator(self, value):
         if isinstance(value, list):
             for restriction in value:
