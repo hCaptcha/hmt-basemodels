@@ -339,6 +339,22 @@ class ManifestTest(unittest.TestCase):
             2, manifest.to_primitive()["restricted_audience"]["min_difficulty"]
         )
 
+    def test_parse_restricted_audience(self):
+        """ Test None fields are skipped in restricted audience """
+        restricted_audience = {"min_difficulty": 2}
+
+        if test_mode == SCHEMATICS:
+            self.assertEqual(
+                RestrictedAudience(restricted_audience).to_primitive(),
+                {"min_difficulty": 2})
+        else:
+            self.assertEqual(
+                PyRestrictedAudience(**restricted_audience).dict(),
+                {"min_difficulty": 2})
+            self.assertEqual(
+                PyRestrictedAudience(**restricted_audience).json(),
+                '{"min_difficulty": 2}')
+
     def test_restricted_audience_only(self):
         def assert_raises(data):
             if test_mode == SCHEMATICS:

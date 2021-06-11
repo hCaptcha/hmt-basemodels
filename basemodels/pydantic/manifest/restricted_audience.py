@@ -32,6 +32,14 @@ class RestrictedAudience(BaseModel):
 
     launch_group_id: Optional[conint(ge=0, strict=True)]
 
+    def dict(self, **kwargs):
+        kwargs["exclude_unset"] = True
+        return super().dict(**kwargs)
+
+    def json(self, **kwargs):
+        kwargs["exclude_unset"] = True
+        return super().json(**kwargs)
+
     @root_validator()
     def validate_score_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         for entry, value in values.items():
