@@ -8,7 +8,7 @@ class RestrictedAudienceBrowserEnum(str, Enum):
     mobile = "mobile"
     tablet = "tablet"
     desktop = "desktop"
-
+    modern_browser = "modern_browser"
 
 class RestrictedAudienceConfidenceEnum(str, Enum):
     minimum_client_confidence = "minimum_client_confidence"
