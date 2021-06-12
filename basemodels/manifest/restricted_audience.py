@@ -82,7 +82,7 @@ class RestrictedAudience(Model):
         return value
 
     def validate_browser(self, data, value):
-        self.keys_choices_check(value, choices=["tablet", "mobile", "desktop"])
+        self.keys_choices_check(value, choices=["tablet", "mobile", "desktop", "modern_browser"])
         return value
 
     def validate_sitekey(self, data, value):

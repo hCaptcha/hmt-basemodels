@@ -463,7 +463,8 @@ class ManifestTest(unittest.TestCase):
             "browser": [
                 {"tablet": {"score": 0.5}},
                 {"desktop": {"score": 0}},
-                {"mobile": {"score": 1}}
+                {"mobile": {"score": 1}},
+                {"modern_browser": {"score": 0.9}},
             ],
             "sitekey": [
                 {str(uuid4()): {"score": 0.5}},
