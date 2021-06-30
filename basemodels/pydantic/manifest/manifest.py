@@ -261,6 +261,9 @@ class Manifest(Model):
 
     webhook: Optional[Webhook]
 
+    rejected_uri: Optional[AnyHttpUrl]
+    rejected_count: Optional[int]
+
     ##### Validators
 
     @validator("requester_min_repeats")

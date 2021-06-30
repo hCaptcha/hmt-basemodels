@@ -149,6 +149,7 @@ class NestedManifest(Model):
     groundtruth_uri = URLType(required=False)
     groundtruth = StringType(required=False)
 
+
     def validate_groundtruth(self, data, value):
         if data.get('groundtruth_uri') and data.get('groundtruth'):
             raise ValidationError("Specify only groundtruth_uri or groundtruth, not both.")
@@ -236,6 +237,9 @@ class Manifest(Model):
     # Groundtruth data is stored as a URL or optionally as an inlined json-serialized stringtype
     groundtruth_uri = URLType(required=False)
     groundtruth = StringType(required=False)
+
+    rejected_uri = URLType(required=False)
+    rejected_count = IntType(default=0, required=False)
 
     def validate_groundtruth(self, data, value):
         if data.get('groundtruth_uri') and data.get('groundtruth'):
