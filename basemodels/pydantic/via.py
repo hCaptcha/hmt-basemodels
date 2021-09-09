@@ -1,6 +1,7 @@
 """
-The VIA Format intends to define a standard HMT format for data files that contain results
-and the annotations associated with that image data.  Each file takes the general form of:
+The VIA Format defines a standard schema for data files containing the results
+of annotations produced for each datapoint of a job, i.e. the tasks defined in
+a job manifest. Each file takes the general form of:
 
 {
     "datapoints": [{
