@@ -5,6 +5,7 @@ import pydantic
 class Pipeline(str, enum.Enum):
     FaceBlurPipeline = 'FaceBlurPipeline'
     OCRThinFilterPipeline = 'OCRThinFilterPipeline'
+    UploadPipeline = 'UploadPipeline'
 
 class Preprocess(pydantic.BaseModel):
     pipeline: Pipeline
