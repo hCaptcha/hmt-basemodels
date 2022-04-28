@@ -211,6 +211,7 @@ class Manifest(Model):
     job_total_tasks: int
     multi_challenge_manifests: Optional[List[NestedManifest]]
     request_type: BaseJobTypesEnum
+    network: Optional[str]
 
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 

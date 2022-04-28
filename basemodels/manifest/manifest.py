@@ -167,6 +167,7 @@ class Manifest(Model):
     job_api_key = UUIDType(default=uuid.uuid4)
     job_id = UUIDType(default=uuid.uuid4)
     job_total_tasks = IntType(required=True)
+    network = StringType(required=False)
 
     requester_restricted_answer_set = DictType(DictType(StringType))
 
