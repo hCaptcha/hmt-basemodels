@@ -33,6 +33,7 @@ class RestrictedAudience(Model):
     sitekey = ListType(DictType(ScoreType), required=False)
     serverdomain = ListType(DictType(ScoreType), required=False)
     confidence = ListType(DictType(ScoreType), required=False)
+    reason = ListType(DictType(ScoreType), required=False)
 
     min_difficulty = IntType(required=False, min_value=0, max_value=4)
     min_user_score = FloatType(required=False, min_value=0, max_value=1)
