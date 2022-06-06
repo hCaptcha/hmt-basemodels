@@ -895,6 +895,24 @@ class TaskEntryTest(unittest.TestCase):
         taskdata.pop("metadata")
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 
+        with self.assertRaises(schematics.exceptions.DataError):
+            taskdata['is_text_question'] = True
+            invalid = TaskDataEntry(taskdata).validate()
+
+        taskdata['datapoint_text'] = "Question to test with"
+        self.assertIsNone(TaskDataEntry(taskdata).validate())
+
+        with self.assertRaises(schematics.exceptions.DataError):
+            taskdata['is_text_question'] = False
+            taskdata['datapoint_uri'] = ""
+            invalid = TaskDataEntry(taskdata).validate()
+
+        with self.assertRaises(schematics.exceptions.DataError):
+            taskdata['datapoint_uri'] = "http://com"
+            invalid = TaskDataEntry(taskdata).validate()
+
+        taskdata['datapoint_uri'] = "https://domain.com/file1.jpg"
+        self.assertIsNone(TaskDataEntry(taskdata).validate())
 
 
 
