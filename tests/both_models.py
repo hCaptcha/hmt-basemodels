@@ -173,6 +173,7 @@ TASK = {
     }
 }
 
+
 class ManifestTest(unittest.TestCase):
     """Manifest specific tests, validating that models work the way we want"""
 
@@ -598,6 +599,11 @@ class ManifestTest(unittest.TestCase):
         del manifest["requester_question_example"]
         validate_func(create_manifest(manifest))()
 
+    def test_default_only_sign_results(self):
+        """ Test whether flat 'only_sign_results' is False by default. """
+        manifest = a_manifest()
+        self.assertEqual(manifest.only_sign_results, False)
+
 
 class ViaTest(unittest.TestCase):
     def test_via_legacy_case(self):
@@ -913,10 +919,6 @@ class TaskEntryTest(unittest.TestCase):
 
         taskdata['datapoint_uri'] = "https://domain.com/file1.jpg"
         self.assertIsNone(TaskDataEntry(taskdata).validate())
-
-
-
-
 
 
 if __name__ == "__main__":
