@@ -598,7 +598,7 @@ class ManifestTest(unittest.TestCase):
         validate_func(create_manifest(manifest))()
 
     def test_default_only_sign_results(self):
-        """ Test whether flat 'only_sign_results' is False by default. """
+        """ Test whether flag 'only_sign_results' is False by default. """
         manifest = a_manifest()
         self.assertEqual(manifest.only_sign_results, False)
 
