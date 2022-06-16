@@ -164,8 +164,6 @@ def a_nested_manifest(
 TASK = {
     "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
     "datapoint_uri": "https://domain.com/file1.jpg",
-    "datapoint_text": "",
-    "is_text_question": False,
     "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
     "metadata": {
         "key_1": "value_1",
@@ -901,24 +899,7 @@ class TaskEntryTest(unittest.TestCase):
         taskdata.pop("metadata")
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 
-        with self.assertRaises(schematics.exceptions.DataError):
-            taskdata['is_text_question'] = True
-            invalid = TaskDataEntry(taskdata).validate()
 
-        taskdata['datapoint_text'] = "Question to test with"
-        self.assertIsNone(TaskDataEntry(taskdata).validate())
-
-        with self.assertRaises(schematics.exceptions.DataError):
-            taskdata['is_text_question'] = False
-            taskdata['datapoint_uri'] = ""
-            invalid = TaskDataEntry(taskdata).validate()
-
-        with self.assertRaises(schematics.exceptions.DataError):
-            taskdata['datapoint_uri'] = "http://com"
-            invalid = TaskDataEntry(taskdata).validate()
-
-        taskdata['datapoint_uri'] = "https://domain.com/file1.jpg"
-        self.assertIsNone(TaskDataEntry(taskdata).validate())
 
 
 if __name__ == "__main__":
