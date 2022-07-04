@@ -79,7 +79,7 @@ class RequestConfig(Model):
     minimum_selection_area_per_shape = IntType()
     multiple_choice_max_choices = IntType(default=1)
     multiple_choice_min_choices = IntType(default=1)
-    sensitivity = FloatType(required=False)
+    overlap_threshold = FloatType(required=False)
 
 class InternalConfig(Model):
     """ discarded from incoming manifests """
