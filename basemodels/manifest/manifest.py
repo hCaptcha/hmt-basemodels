@@ -80,6 +80,13 @@ class RequestConfig(Model):
     multiple_choice_max_choices = IntType(default=1)
     multiple_choice_min_choices = IntType(default=1)
     overlap_threshold = FloatType(required=False)
+    answer_type = StringType(choices=["int", "float", "str"], default="str")
+    max_value = FloatType()
+    min_value = FloatType()
+    max_length = IntType()
+    min_length = IntType()
+    sig_figs = IntType()
+
 
 class InternalConfig(Model):
     """ discarded from incoming manifests """
