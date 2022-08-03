@@ -200,7 +200,7 @@ class ManifestTest(unittest.TestCase):
         """Test that jobs with valid request_config parameter work"""
         manifest = a_manifest(
             request_type="image_label_area_select",
-            request_config={"shape_type": "point"},
+            request_config={"shape_type": "point", "overlap_threshold": 0.8},
         )
 
     def test_can_make_nested_request_config_job_single_nest(self):
