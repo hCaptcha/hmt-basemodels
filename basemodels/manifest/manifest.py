@@ -169,6 +169,7 @@ class Manifest(Model):
     job_total_tasks = IntType(required=True)
     network = StringType(required=False)
     only_sign_results = BooleanType(default=False,)
+    store_pub_final_results = BooleanType(default=False,)
 
     requester_restricted_answer_set = DictType(DictType(StringType))
 

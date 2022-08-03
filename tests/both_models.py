@@ -602,6 +602,11 @@ class ManifestTest(unittest.TestCase):
         manifest = a_manifest()
         self.assertEqual(manifest.only_sign_results, False)
 
+    def test_default_store_pub_final_results(self):
+        """ Test whether flag 'store_pub_final_results' is False by default. """
+        manifest = a_manifest()
+        self.assertEqual(manifest.store_pub_final_results, False)
+
 
 class ViaTest(unittest.TestCase):
     def test_via_legacy_case(self):

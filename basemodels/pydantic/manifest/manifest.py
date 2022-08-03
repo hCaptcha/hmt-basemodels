@@ -213,6 +213,7 @@ class Manifest(Model):
     request_type: BaseJobTypesEnum
     network: Optional[str]
     only_sign_results: bool = False
+    store_pub_final_results: bool = False
 
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 
