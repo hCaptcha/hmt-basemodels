@@ -1,5 +1,7 @@
 from schematics.models import Model, ValidationError
-from schematics.types import UUIDType, URLType, StringType, DictType, IntType, FloatType, UnionType, BooleanType
+from schematics.types import UUIDType, URLType, StringType, DictType, IntType, FloatType, UnionType
+
+from basemodels.manifest.utils import check_valid_image
 
 
 class TaskDataEntry(Model):
@@ -41,4 +43,7 @@ def validate_taskdata_entry(value: dict):
     if not isinstance(value, dict):
         raise ValidationError("taskdata entry should be dict")
 
-    TaskDataEntry(value).validate()
+    task_data = TaskDataEntry(value)
+    task_data.validate()
+
+    check_valid_image(str(task_data.task_key), str(task_data.datapoint_uri))

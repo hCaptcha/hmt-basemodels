@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
-from pydantic import BaseModel, ValidationError, validator
-from typing import Any
+import json
 import logging
-import os
-import sys
-import schematics
-import basemodels
-from uuid import uuid4
+import unittest
 from copy import deepcopy
-from basemodels.manifest.data.taskdata import TaskDataEntry
+from typing import Any, Dict
+from unittest.mock import patch
+from uuid import uuid4
 
+import httpretty
+import schematics
+from pydantic import ValidationError
+
+import basemodels
 # New pydantic model
 import basemodels.pydantic as pydantic_basemodels
-import unittest
-import httpretty
-import json
-
+from basemodels.manifest.data.taskdata import TaskDataEntry
 from basemodels.manifest.restricted_audience import RestrictedAudience
 from basemodels.pydantic.manifest.restricted_audience import RestrictedAudience as PyRestrictedAudience
 
@@ -88,15 +87,15 @@ test_models = basemodels
 
 
 def a_manifest(
-    number_of_tasks=100,
-    bid_amount=1.0,
-    oracle_stake=0.05,
-    expiration_date=0,
-    minimum_trust=0.1,
-    request_type=IMAGE_LABEL_BINARY,
-    request_config=None,
-    job_mode="batch",
-    multi_challenge_manifests=None,
+        number_of_tasks=100,
+        bid_amount=1.0,
+        oracle_stake=0.05,
+        expiration_date=0,
+        minimum_trust=0.1,
+        request_type=IMAGE_LABEL_BINARY,
+        request_config=None,
+        job_mode="batch",
+        multi_challenge_manifests=None,
 ) -> Any:
     internal_config = {"exchange": {"a": 1, "b": "c"}}
     model = {
@@ -137,7 +136,7 @@ def a_manifest(
 
 
 def a_nested_manifest(
-    request_type=IMAGE_LABEL_BINARY, minimum_trust=0.1, request_config=None
+        request_type=IMAGE_LABEL_BINARY, minimum_trust=0.1, request_config=None
 ) -> Any:
     model = {
         "requester_restricted_answer_set": {
@@ -160,6 +159,7 @@ def a_nested_manifest(
     validate_func(manifest)()
 
     return manifest
+
 
 TASK = {
     "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
@@ -311,7 +311,7 @@ class ManifestTest(unittest.TestCase):
             "confidence": [{"minimum_client_confidence": {"score": 0.9}}],
             "min_difficulty": 2,
         }
-        
+
         if test_mode == PYDANTIC:
             manifest.restricted_audience = PyRestrictedAudience(**restricted_audience)
         else:
@@ -491,7 +491,6 @@ class ManifestTest(unittest.TestCase):
         else:
             PyRestrictedAudience(**data)
 
-
     def test_realistic_multi_challenge_example(self):
         """ validates a realistic multi_challenge manifest """
         obj = {
@@ -605,7 +604,7 @@ class ManifestTest(unittest.TestCase):
     def test_default_store_pub_final_results(self):
         """ Test whether flag 'store_pub_final_results' is False by default. """
         manifest = a_manifest()
-        self.assertEqual(manifest.store_pub_final_results, False)
+        self.assertEqual(manifest.public_results, False)
 
 
 class ViaTest(unittest.TestCase):
@@ -671,9 +670,6 @@ class ViaTest(unittest.TestCase):
         self.assertEqual(len(parsed["datapoints"]), 1)
         self.assertEqual(parsed["version"], 1)
         self.assertIn("dog", parsed["datapoints"][0]["class_attributes"])
-
-
-
 
 
 @httpretty.activate
@@ -796,7 +792,9 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(validation_base_errors[test_mode]):
             test_models.validate_manifest_uris(manifest)
 
-    def test_taskdata_uri_valid(self):
+    @patch('basemodels.manifest.data.taskdata.check_valid_image')
+    @patch('basemodels.pydantic.manifest.data.taskdata.check_valid_image')
+    def test_taskdata_uri_valid(self, pydantic_check_image, schematics_check_image):
         uri = "https://uri.com"
         manifest = {"taskdata_uri": uri}
         body = [
@@ -816,6 +814,12 @@ class TestValidateManifestUris(unittest.TestCase):
 
         test_models.validate_manifest_uris(manifest)
 
+        # Checks whether datapoint_uri is a valid image URI
+        if test_mode == SCHEMATICS:
+            schematics_check_image.assert_called()
+        elif test_mode == PYDANTIC:
+            pydantic_check_image.assert_called()
+
     def test_taskdata_uri_invalid(self):
         uri = "https://uri.com"
         manifest = {"taskdata_uri": uri}
@@ -826,7 +830,9 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(validation_base_errors[test_mode]):
             test_models.validate_manifest_uris(manifest)
 
-    def test_groundtruth_and_taskdata_valid(self):
+    @patch('basemodels.manifest.data.taskdata.check_valid_image')
+    @patch('basemodels.pydantic.manifest.data.taskdata.check_valid_image')
+    def test_groundtruth_and_taskdata_valid(self, pydantic_check_image, schematics_check_image):
         taskdata_uri = "https://td.com"
         groundtruth_uri = "https://gt.com"
         manifest = {
@@ -857,6 +863,13 @@ class TestValidateManifestUris(unittest.TestCase):
         self.register_http_response(groundtruth_uri, manifest, groundtruth)
 
         test_models.validate_manifest_uris(manifest)
+
+        # Checks whether datapoint_uri is a valid image URI
+        print('test_mode', test_mode)
+        if test_mode == SCHEMATICS:
+            schematics_check_image.assert_called()
+        elif test_mode == PYDANTIC:
+            pydantic_check_image.assert_called()
 
     def test_mitl_in_internal_config(self):
         """ Test that mitl config can be part of the internal configuration """
@@ -899,12 +912,10 @@ class TaskEntryTest(unittest.TestCase):
 
         with self.assertRaises(schematics.exceptions.DataError):
             taskdata.get("metadata")["key_1"] += 1024 * "a"
-            r = TaskDataEntry(taskdata).validate()
+            TaskDataEntry(taskdata).validate()
 
         taskdata.pop("metadata")
         self.assertIsNone(TaskDataEntry(taskdata).validate())
-
-
 
 
 if __name__ == "__main__":
