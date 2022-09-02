@@ -1,3 +1,4 @@
+import random
 import uuid
 import requests
 from requests.exceptions import RequestException
@@ -11,6 +12,8 @@ from pydantic import BaseModel, validator, ValidationError, validate_model, Http
 from pydantic.fields import Field
 from decimal import Decimal
 from .restricted_audience import RestrictedAudience
+from ...utils import check_valid_image, ImageValidationError
+
 
 # Validator function for taskdata and taskdata_uri fields
 def validator_taskdata_uri(cls, value, values, **kwargs):
@@ -91,7 +94,6 @@ class Webhook(Model):
     # job_skipped: List[str] = None
     # job_inserted : List[str] = None
     # job_activated : List[str] = None
-
 
 
 class TaskData(BaseModel):
@@ -378,10 +380,21 @@ def validate_taskdata_uri(manifest: dict):
 
         entries_count = 0
         data = response.json()
+
+        if not data:
+            raise ValidationError(f"{uri} returns empty response", Manifest)
+
+        if uri_key == 'taskdata_uri' and isinstance(data, list):
+            random_entry = random.choice(data)
+            check_valid_image(str(random_entry['task_key']), str(random_entry['datapoint_uri']))
+
         for v in data:
             entries_count += 1
             validate_taskdata_entry(v)
-    except (ValidationError, RequestException) as e:
+    except ValidationError as e:
+        raise e
+
+    except (RequestException, ImageValidationError) as e:
         raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
 
     if entries_count == 0:

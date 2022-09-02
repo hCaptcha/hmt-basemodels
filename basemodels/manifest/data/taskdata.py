@@ -1,8 +1,6 @@
 from schematics.models import Model, ValidationError
 from schematics.types import UUIDType, URLType, StringType, DictType, IntType, FloatType, UnionType
 
-from basemodels.manifest.utils import check_valid_image
-
 
 class TaskDataEntry(Model):
     """
@@ -25,12 +23,12 @@ class TaskDataEntry(Model):
     datapoint_uri = URLType(required=True, min_length=10)
     datapoint_hash = StringType()
     metadata = DictType(
-      UnionType([
-        StringType(required=False, max_length=256),
-        FloatType,
-        IntType
-      ]),
-    required=False)
+        UnionType([
+            StringType(required=False, max_length=256),
+            FloatType,
+            IntType
+        ]),
+        required=False)
 
     def validate_metadata(self, data, value):
         if len(str(value)) > 1024:
@@ -45,5 +43,3 @@ def validate_taskdata_entry(value: dict):
 
     task_data = TaskDataEntry(value)
     task_data.validate()
-
-    check_valid_image(str(task_data.task_key), str(task_data.datapoint_uri))

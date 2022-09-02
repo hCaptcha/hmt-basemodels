@@ -12,7 +12,6 @@ import schematics
 from pydantic import ValidationError
 
 import basemodels
-# New pydantic model
 import basemodels.pydantic as pydantic_basemodels
 from basemodels.manifest.data.taskdata import TaskDataEntry
 from basemodels.manifest.restricted_audience import RestrictedAudience
@@ -792,8 +791,8 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(validation_base_errors[test_mode]):
             test_models.validate_manifest_uris(manifest)
 
-    @patch('basemodels.manifest.data.taskdata.check_valid_image')
-    @patch('basemodels.pydantic.manifest.data.taskdata.check_valid_image')
+    @patch('basemodels.manifest.manifest.check_valid_image')
+    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
     def test_taskdata_uri_valid(self, pydantic_check_image, schematics_check_image):
         uri = "https://uri.com"
         manifest = {"taskdata_uri": uri}
@@ -830,8 +829,8 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(validation_base_errors[test_mode]):
             test_models.validate_manifest_uris(manifest)
 
-    @patch('basemodels.manifest.data.taskdata.check_valid_image')
-    @patch('basemodels.pydantic.manifest.data.taskdata.check_valid_image')
+    @patch('basemodels.manifest.manifest.check_valid_image')
+    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
     def test_groundtruth_and_taskdata_valid(self, pydantic_check_image, schematics_check_image):
         taskdata_uri = "https://td.com"
         groundtruth_uri = "https://gt.com"
@@ -864,8 +863,7 @@ class TestValidateManifestUris(unittest.TestCase):
 
         test_models.validate_manifest_uris(manifest)
 
-        # Checks whether datapoint_uri is a valid image URI
-        print('test_mode', test_mode)
+        # Checks whether datapoint_uri is a valid image
         if test_mode == SCHEMATICS:
             schematics_check_image.assert_called()
         elif test_mode == PYDANTIC:

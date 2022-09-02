@@ -2,8 +2,6 @@ from typing import Dict, Optional, Union
 from pydantic import BaseModel, HttpUrl, validate_model, ValidationError, validator
 from uuid import UUID
 
-from basemodels.pydantic.utils import check_valid_image
-
 
 # New type
 class AtLeastTenCharUrl(HttpUrl):
@@ -57,4 +55,3 @@ def validate_taskdata_entry(value: dict):
         raise ValidationError("taskdata entry should be dict", TaskDataEntry())
 
     entry = TaskDataEntry(**value)
-    check_valid_image(str(entry.task_key), entry.datapoint_uri)

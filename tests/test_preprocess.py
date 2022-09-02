@@ -1,7 +1,9 @@
 import unittest
 
 from schematics.exceptions import DataError
-from basemodels.manifest import Preprocess
+
+from basemodels.manifest.data.preprocess import Preprocess
+
 
 class PipelineTest(unittest.TestCase):
     def test_preprocess(self):

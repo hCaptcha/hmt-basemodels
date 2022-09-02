@@ -1,16 +1,18 @@
+import random
 import uuid
+from typing import Callable, Any
+
 import requests
 from requests.exceptions import RequestException
-from typing import Dict, Callable, Any, Union
-from schematics.models import Model, ValidationError
 from schematics.exceptions import BaseError
-from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
-    UUIDType, ModelType, BooleanType, UnionType, NumberType, BaseType
+from schematics.models import Model, ValidationError
+from schematics.types import StringType, DecimalType, IntType, DictType, ListType, URLType, FloatType, \
+    UUIDType, ModelType, BooleanType, UnionType
 
 from .data.groundtruth import validate_groundtruth_entry
 from .data.taskdata import validate_taskdata_entry
-from .data.preprocess import Preprocess
 from .restricted_audience import RestrictedAudience
+from ..utils import check_valid_image, ImageValidationError
 
 BASE_JOB_TYPES = [
     "image_label_binary",
@@ -156,7 +158,6 @@ class NestedManifest(Model):
     groundtruth_uri = URLType(required=False)
     groundtruth = StringType(required=False)
 
-
     def validate_groundtruth(self, data, value):
         if data.get('groundtruth_uri') and data.get('groundtruth'):
             raise ValidationError("Specify only groundtruth_uri or groundtruth, not both.")
@@ -175,8 +176,8 @@ class Manifest(Model):
     job_id = UUIDType(default=uuid.uuid4)
     job_total_tasks = IntType(required=True)
     network = StringType(required=False)
-    only_sign_results = BooleanType(default=False,)
-    public_results = BooleanType(default=False,)
+    only_sign_results = BooleanType(default=False, )
+    public_results = BooleanType(default=False, )
 
     requester_restricted_answer_set = DictType(DictType(StringType))
 
@@ -320,8 +321,17 @@ def validate_manifest_uris(manifest: dict):
             response = requests.get(uri)
             response.raise_for_status()
 
-            entries_count = traverse_json_entries(response.json(), validate_entry)
-        except (BaseError, RequestException) as e:
+            data = response.json()
+
+            if not data:
+                raise ValidationError(f"{uri_key} returns empty response")
+
+            if uri_key == 'taskdata_uri' and isinstance(data, list):
+                random_entry = random.choice(data)
+                check_valid_image(str(random_entry['task_key']), str(random_entry['datapoint_uri']))
+
+            entries_count = traverse_json_entries(data, validate_entry)
+        except (BaseError, RequestException, ImageValidationError) as e:
             raise ValidationError(f"{uri_key} validation failed: {e}") from e
 
         if entries_count == 0:
