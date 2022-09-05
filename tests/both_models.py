@@ -689,13 +689,21 @@ class TestValidateManifestUris(unittest.TestCase):
         manifest = {}
         test_models.validate_manifest_uris(manifest)
 
-    def test_groundtruth_uri_ilb_valid(self):
+    @patch('basemodels.manifest.manifest.check_valid_image')
+    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
+    def test_groundtruth_uri_ilb_valid(self, pydantic_check_image, schematics_check_image):
         body = {
             "https://domain.com/123/file1.jpeg": ["false", "false", "false"],
             "https://domain.com/456/file2.jpeg": ["false", "true", "false"],
         }
 
         self.validate_groundtruth_response("image_label_binary", body)
+
+        # Checks whether datapoint_uri is a valid image
+        if test_mode == SCHEMATICS:
+            schematics_check_image.assert_called()
+        elif test_mode == PYDANTIC:
+            pydantic_check_image.assert_called()
 
     def test_groundtruth_uri_ilb_invalid(self):
         body = {"not_uri": ["false", "false", True]}
@@ -710,7 +718,9 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_binary", body)
 
-    def test_groundtruth_uri_ilmc_valid(self):
+    @patch('basemodels.manifest.manifest.check_valid_image')
+    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
+    def test_groundtruth_uri_ilmc_valid(self, pydantic_check_image, schematics_check_image):
         body = {
             "https://domain.com/file1.jpeg": [["cat"], ["cat"], ["cat"]],
             "https://domain.com/file2.jpeg": [["dog"], ["dog"], ["dog"]],
@@ -718,13 +728,21 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.validate_groundtruth_response("image_label_multiple_choice", body)
 
+        # Checks whether datapoint_uri is a valid image
+        if test_mode == SCHEMATICS:
+            schematics_check_image.assert_called()
+        elif test_mode == PYDANTIC:
+            pydantic_check_image.assert_called()
+
     def test_groundtruth_uri_ilmc_invalid_key(self):
         body = {"not_uri": [["cat"], ["cat"], ["cat"]]}
 
         with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_multiple_choice", body)
 
-    def test_groundtruth_uri_ilmc_invalid_value(self):
+    @patch('basemodels.manifest.manifest.check_valid_image')
+    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
+    def test_groundtruth_uri_ilmc_invalid_value(self, pydantic_check_image, schematics_check_image):
         body = {
             "https://domain.com/file1.jpeg": [True, False],
         }
@@ -732,7 +750,15 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_multiple_choice", body)
 
-    def test_groundtruth_uri_ilas_valid(self):
+        # Checks whether datapoint_uri is a valid image
+        if test_mode == SCHEMATICS:
+            schematics_check_image.assert_called()
+        elif test_mode == PYDANTIC:
+            pydantic_check_image.assert_called()
+
+    @patch('basemodels.manifest.manifest.check_valid_image')
+    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
+    def test_groundtruth_uri_ilas_valid(self, pydantic_check_image, schematics_check_image):
         body = {
             "https://domain.com/file1.jpeg": [
                 [
@@ -746,6 +772,12 @@ class TestValidateManifestUris(unittest.TestCase):
         }
 
         self.validate_groundtruth_response("image_label_area_select", body)
+
+        # Checks whether datapoint_uri is a valid image
+        if test_mode == SCHEMATICS:
+            schematics_check_image.assert_called()
+        elif test_mode == PYDANTIC:
+            pydantic_check_image.assert_called()
 
     def test_groundtruth_uri_ilas_invalid_key(self):
         body = {
@@ -763,11 +795,19 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_area_select", body)
 
-    def test_groundtruth_uri_ilas_invalid_value(self):
+    @patch('basemodels.manifest.manifest.check_valid_image')
+    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
+    def test_groundtruth_uri_ilas_invalid_value(self, pydantic_check_image, schematics_check_image):
         body = {"https://domain.com/file1.jpeg": [[True]]}
 
         with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_area_select", body)
+
+        # Checks whether datapoint_uri is a valid image
+        if test_mode == SCHEMATICS:
+            schematics_check_image.assert_called()
+        elif test_mode == PYDANTIC:
+            pydantic_check_image.assert_called()
 
     def test_taskdata_empty(self):
         """ should raise if taskdata_uri contains no entries """

@@ -176,8 +176,8 @@ class Manifest(Model):
     job_id = UUIDType(default=uuid.uuid4)
     job_total_tasks = IntType(required=True)
     network = StringType(required=False)
-    only_sign_results = BooleanType(default=False, )
-    public_results = BooleanType(default=False, )
+    only_sign_results = BooleanType(default=False)
+    public_results = BooleanType(default=False)
 
     requester_restricted_answer_set = DictType(DictType(StringType))
 
@@ -326,11 +326,22 @@ def validate_manifest_uris(manifest: dict):
             if not data:
                 raise ValidationError(f"{uri_key} returns empty response")
 
-            if uri_key == 'taskdata_uri' and isinstance(data, list):
+            if isinstance(data, list):
+                if uri_key == 'groundtruth_uri':
+                    raise ValidationError(f"groundtruth_uri cannot be a list")
+
                 random_entry = random.choice(data)
-                check_valid_image(str(random_entry['task_key']), str(random_entry['datapoint_uri']))
+                check_valid_image(uri_key, str(random_entry['datapoint_uri']))
+
+            elif isinstance(data, dict):
+                if uri_key == 'taskdata_uri':
+                    raise ValidationError(f"taskdata_uri cannot be a dict")
+
+                random_image_uri = random.choice(list(data.keys()))
+                check_valid_image(uri_key, random_image_uri)
 
             entries_count = traverse_json_entries(data, validate_entry)
+
         except (BaseError, RequestException, ImageValidationError) as e:
             raise ValidationError(f"{uri_key} validation failed: {e}") from e
 

@@ -351,6 +351,10 @@ def validate_groundtruth_uri(manifest: dict):
         entries_count = 0
         data = response.json()
         if isinstance(data, dict):
+
+            random_image_uri = random.choice(list(data.keys()))
+            check_valid_image(uri_key, random_image_uri)
+
             for k, v in data.items():
                 entries_count += 1
                 validate_groundtruth_entry(k, v, request_type)
@@ -359,7 +363,7 @@ def validate_groundtruth_uri(manifest: dict):
                 entries_count += 1
                 validate_groundtruth_entry("", v, request_type)
 
-    except (ValidationError, RequestException) as e:
+    except (ValidationError, RequestException, ImageValidationError) as e:
         raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
 
     if entries_count == 0:
@@ -384,7 +388,7 @@ def validate_taskdata_uri(manifest: dict):
         if not data:
             raise ValidationError(f"{uri} returns empty response", Manifest)
 
-        if uri_key == 'taskdata_uri' and isinstance(data, list):
+        if isinstance(data, list):
             random_entry = random.choice(data)
             check_valid_image(str(random_entry['task_key']), str(random_entry['datapoint_uri']))
 

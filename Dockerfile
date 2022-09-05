@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM python:3.9-slim
 
 WORKDIR /work
 RUN apt-get update -y && \

@@ -54,4 +54,6 @@ def validate_taskdata_entry(value: dict):
     if not isinstance(value, dict):
         raise ValidationError("taskdata entry should be dict", TaskDataEntry())
 
-    entry = TaskDataEntry(**value)
+    *_, validation_error = validate_model(TaskDataEntry, value)
+    if validation_error:
+        raise validation_error
