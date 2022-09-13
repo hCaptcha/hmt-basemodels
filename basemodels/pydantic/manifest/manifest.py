@@ -1,16 +1,19 @@
 import random
 import uuid
-import requests
-from requests.exceptions import RequestException
-from typing_extensions import Literal
-from typing import Dict, Callable, Any, Union, Type, List, Optional
+from decimal import Decimal
 from enum import Enum
+from typing import Dict, Union, List, Optional
 from uuid import UUID, uuid4
-from .data.groundtruth import validate_groundtruth_entry
-from .data.taskdata import validate_taskdata_entry
+from warnings import warn
+
+import requests
 from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl
 from pydantic.fields import Field
-from decimal import Decimal
+from requests.exceptions import RequestException
+from typing_extensions import Literal
+
+from .data.groundtruth import validate_groundtruth_entry
+from .data.taskdata import validate_taskdata_entry
 from .restricted_audience import RestrictedAudience
 from ...utils import check_valid_image, ImageValidationError
 
@@ -23,9 +26,11 @@ def validator_taskdata_uri(cls, value, values, **kwargs):
         raise ValidationError(u'Specify only one of taskdata {} or taskdata_uri {}'.format(taskdata, taskdata_uri))
     return value
 
+
 # A validator function for UUID fields
 def validate_uuid(cls, value):
     return value or uuid.uuid4()
+
 
 # Base job types
 class BaseJobTypesEnum(str, Enum):
@@ -43,10 +48,12 @@ class BaseJobTypesEnum(str, Enum):
     image_label_text = "image_label_text"
     multi_challenge = "multi_challenge"
 
+
 # Return a request type validator function
 class RequestTypeValidator(object):
     def __init__(self, multi_challenge: bool = True):
         self.multi_challenge = multi_challenge
+
     def validate(self, cls, value, values):
         """
         validate request types for all types of challenges
@@ -63,11 +70,13 @@ class RequestTypeValidator(object):
                     "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
         return value
 
+
 # Shape types enum
 class ShapeTypes(str, Enum):
     point = "point"
     bounding_box = "bounding_box"
     polygon = "polygon"
+
 
 class Model(BaseModel):
     def to_primitive(self):
@@ -83,6 +92,7 @@ class Model(BaseModel):
         # For compatibility with tests
         if return_new:
             return self.__class__(**out_dict)
+
 
 class Webhook(Model):
     """ Model for webhook configuration """
@@ -140,7 +150,7 @@ class NestedManifest(Model):
 
     request_type: BaseJobTypesEnum
     validate_request_type = validator('request_type', allow_reuse=True, \
-            always=True)(RequestTypeValidator(multi_challenge=False).validate)
+                                      always=True)(RequestTypeValidator(multi_challenge=False).validate)
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 
     @validator('requester_restricted_answer_set', always=True)
@@ -334,77 +344,120 @@ class Manifest(Model):
         arbitrary_types_allowed = True
 
 
-def validate_groundtruth_uri(manifest: dict):
+def validate_groundtruth_content(request_type: str, field_name: str,
+                                 groundtruth: Dict[str, Union[List[str], Dict]]) -> None:
+    """ Validates groundtruth content from a manifest.
+
+    Parameters:
+        request_type(str): request type is the job type processed during groundtruth validation
+        field_name(str): field name from where groundtruth was retrieved. It may be groundtruth_uri or groundtruth
+        groundtruth(dict): ground truth content to be validated
+
+    Raises:
+        ValidationError
     """
-    Validate groundtruth_uri
-    Returns entries count if succeeded
+    if not groundtruth:
+        raise ValidationError(
+            f'Manifest groundtruth is empty from field {field_name} and request type {request_type}',
+            Manifest
+        )
+
+    if not isinstance(groundtruth, Dict):
+        raise ValidationError(f'Manifest groundtruth must be a dict', Manifest)
+
+    try:
+        # Validating task content
+        [validate_groundtruth_entry(k, v, request_type) for k, v in groundtruth.items()]
+
+        # Checking whether task data has at least one valid image URI which is valid (not expired)
+        random_image_uri = random.choice(list(groundtruth.keys()))
+        check_valid_image(field_name, random_image_uri)
+
+    except ValidationError as e:
+        raise ValidationError(f"taskdata failed from \"{field_name}\": {e.raw_errors}", Manifest) from e
+
+    except ImageValidationError as e:
+        raise ValidationError(f"taskdata failed from \"{field_name}\": {e}", Manifest) from e
+
+
+def validate_taskdata_content(field_name: str, task_data: List[Dict]) -> None:
+    """ Validates taskdata content.
+
+    Parameters:
+        field_name(str): field name from where taskdata was retrieved. It may be taskdata_uri or taskdata
+        task_data(list): Task data content to be validated
+
+    Raises:
+        ValidationError
+    """
+    if not task_data:
+        raise ValidationError(f'Manifest taskdata is empty from field {field_name}', Manifest)
+
+    if not isinstance(task_data, List):
+        raise ValidationError(f'Manifest groundtruth must be a dict', Manifest)
+
+    try:
+        # Validating task content
+        [validate_taskdata_entry(item) for item in task_data]
+
+        # Checking whether task data has at least one valid image URI which is valid (not expired)
+        random_entry = random.choice(task_data)
+        check_valid_image(field_name, str(random_entry['datapoint_uri']))
+
+    except ValidationError as e:
+        raise ValidationError(f"taskdata failed from \"{field_name}\": {e.raw_errors}", Manifest) from e
+
+    except ImageValidationError as e:
+        raise ValidationError(f"taskdata failed from \"{field_name}\": {e}", Manifest) from e
+
+
+def validate_manifest_classification_data(manifest: dict):
+    """ Validates manifest's classification data whether content is in accordance to what's needed to use images for
+    binary classification.
     """
     request_type = manifest.get('request_type', '')
-    uri_key = "groundtruth_uri"
-    uri = manifest.get(uri_key)
-    if uri is None:
-        return
-    try:
-        response = requests.get(uri, timeout=1)
-        response.raise_for_status()
 
-        entries_count = 0
-        data = response.json()
-        if isinstance(data, dict):
+    content_validators = {
+        "groundtruth|groundtruth_uri": lambda f, v: validate_groundtruth_content(request_type, f, v),
+        "taskdata|taskdata_uri": lambda f, v: validate_taskdata_content(f, v)
+    }
 
-            random_image_uri = random.choice(list(data.keys()))
-            check_valid_image(uri_key, random_image_uri)
+    for fields, content_validator in content_validators.items():
+        content_field, uri_field = fields.split('|')
 
-            for k, v in data.items():
-                entries_count += 1
-                validate_groundtruth_entry(k, v, request_type)
-        else:
-            for v in data:
-                entries_count += 1
-                validate_groundtruth_entry("", v, request_type)
+        uri = manifest.get(uri_field)
+        content = manifest.get(content_field)
 
-    except (ValidationError, RequestException, ImageValidationError) as e:
-        raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
+        if not uri and not content:
+            # No data provided
+            continue
 
-    if entries_count == 0:
-        raise ValidationError(f"fetched {uri_key} is empty", Manifest)
+        if uri and content:
+            raise ValidationError(f"Specify only {uri_field} or {content_field}, not both.", Manifest)
 
-def validate_taskdata_uri(manifest: dict):
-    """
-    Validate taskdata_uri
-    Returns entries count if succeeded
-    """
-    uri_key = "taskdata_uri"
-    uri = manifest.get(uri_key)
-    if uri is None:
-        return
-    try:
-        response = requests.get(uri, timeout=1)
-        response.raise_for_status()
+        field_name = content_field
 
-        entries_count = 0
-        data = response.json()
+        if uri:
+            field_name = uri_field
 
-        if not data:
-            raise ValidationError(f"{uri} returns empty response", Manifest)
+            try:
+                response = requests.get(uri)
+                response.raise_for_status()
 
-        if isinstance(data, list):
-            random_entry = random.choice(data)
-            check_valid_image(str(random_entry['task_key']), str(random_entry['datapoint_uri']))
+            except RequestException as e:
+                raise ValidationError(f"{uri_field} has invalid URI: {uri}", Manifest)
 
-        for v in data:
-            entries_count += 1
-            validate_taskdata_entry(v)
-    except ValidationError as e:
-        raise e
+            else:
+                content = response.json()
+                if not content:
+                    raise ValidationError(f"{uri_field} returns empty response", Manifest)
 
-    except (RequestException, ImageValidationError) as e:
-        raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
+        # Validate content
+        content_validator(field_name, content)
 
-    if entries_count == 0:
-        raise ValidationError(f"fetched {uri_key} is empty", Manifest)
 
 def validate_manifest_uris(manifest: dict):
     """ Fetch & validate manifest's remote objects """
-    validate_taskdata_uri(manifest)
-    validate_groundtruth_uri(manifest)
+    # @TODO: let's deprecate this and remove in future release.
+    warn('using deprecated function "validate_manifest_uris". Please switch to "validate_manifest_classification_data"')
+    validate_manifest_classification_data(manifest)

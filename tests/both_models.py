@@ -3,19 +3,21 @@ import json
 import logging
 import unittest
 from copy import deepcopy
-from typing import Any, Dict
+from typing import Any, Dict, Union
 from unittest.mock import patch
 from uuid import uuid4
 
 import httpretty
 import schematics
-from pydantic import ValidationError
+from pydantic import ValidationError as PydanticValidationError
+from schematics.exceptions import ValidationError as SchematicsValidationError
 
 import basemodels
 import basemodels.pydantic as pydantic_basemodels
 from basemodels.manifest.data.taskdata import TaskDataEntry
 from basemodels.manifest.restricted_audience import RestrictedAudience
 from basemodels.pydantic.manifest.restricted_audience import RestrictedAudience as PyRestrictedAudience
+from basemodels.utils import ImageValidationError
 
 CALLBACK_URL = "http://google.com/webback"
 FAKE_URL = "http://google.com/fake"
@@ -33,13 +35,28 @@ test_modes = {SCHEMATICS: basemodels, PYDANTIC: pydantic_basemodels}
 # Library related errors
 validation_base_errors = {
     SCHEMATICS: schematics.exceptions.BaseError,
-    PYDANTIC: ValidationError,
+    PYDANTIC: PydanticValidationError,
 }
 
 # Library related errors
 validation_data_errors = {
     SCHEMATICS: schematics.exceptions.DataError,
-    PYDANTIC: ValidationError,
+    PYDANTIC: PydanticValidationError,
+}
+
+groundtruth_classification_data_validators = {
+    SCHEMATICS: basemodels.manifest.validate_groundtruth_content,
+    PYDANTIC: basemodels.pydantic.manifest.manifest.validate_groundtruth_content,
+}
+
+taskdata_classification_data_validators = {
+    SCHEMATICS: basemodels.manifest.validate_taskdata_content,
+    PYDANTIC: basemodels.pydantic.manifest.manifest.validate_taskdata_content,
+}
+
+manifest_classification_data_validators = {
+    SCHEMATICS: basemodels.manifest.validate_manifest_classification_data,
+    PYDANTIC: basemodels.pydantic.manifest.manifest.validate_manifest_classification_data,
 }
 
 
@@ -95,7 +112,7 @@ def a_manifest(
         request_config=None,
         job_mode="batch",
         multi_challenge_manifests=None,
-) -> Any:
+) -> Union[basemodels.Manifest, pydantic_basemodels.Manifest]:
     internal_config = {"exchange": {"a": 1, "b": "c"}}
     model = {
         "requester_restricted_answer_set": {
@@ -184,6 +201,7 @@ class ManifestTest(unittest.TestCase):
 
     def test_can_fail_toconstruct(self):
         """Tests that the manifest raises an Error when called with falsy parameters."""
+        # @TODO: remove test - not testing anything
         a_manifest(-1)
         self.assertRaises(
             validation_data_errors[test_mode], a_manifest, "invalid amount"
@@ -191,6 +209,7 @@ class ManifestTest(unittest.TestCase):
 
     def test_can_fail_toconstruct2(self):
         """Tests that validated fields can't be broken without an exception."""
+        # @TODO: remove test - not testing anything
         mani = a_manifest()
         mani.taskdata_uri = "test"
         self.assertRaises(validation_data_errors[test_mode], validate_func(mani))
@@ -361,7 +380,7 @@ class ManifestTest(unittest.TestCase):
                 with self.assertRaises(schematics.exceptions.BaseError):
                     RestrictedAudience(data).validate()
             else:
-                with self.assertRaises(ValidationError):
+                with self.assertRaises(PydanticValidationError):
                     PyRestrictedAudience(**data)
 
         for data in [
@@ -600,10 +619,45 @@ class ManifestTest(unittest.TestCase):
         manifest = a_manifest()
         self.assertEqual(manifest.only_sign_results, False)
 
-    def test_default_store_pub_final_results(self):
+    def test_default_public_results(self):
         """ Test whether flag 'store_pub_final_results' is False by default. """
         manifest = a_manifest()
         self.assertEqual(manifest.public_results, False)
+
+    def test_groundtruth_conflict_validation(self):
+        """ Tests manifest validation when groundtruth_uri and groundtruth are provided. """
+        # @TODO groundthruth conflict validation is not working for pydantic
+        if test_mode == SCHEMATICS:
+            manifest = a_manifest()
+
+            manifest.groundtruth_uri = 'https://fake-url.com'
+            manifest.groundtruth = json.dumps({"https://image-uri.com": ["true", "true", "true"]})
+
+            with self.assertRaises(validation_data_errors[test_mode]) as e:
+                validate_func(manifest)()
+
+            self.assertIn('not both', str(e.exception))
+
+    def test_task_conflict_validation(self):
+        """ Tests manifest validation when taskdata_uri and taskdata are provided. """
+        # @TODO taskdata conflict validation is not working for pydantic
+        if test_mode == SCHEMATICS:
+            manifest = a_manifest()
+
+            # manifest.taskdata_uri = 'https://taskdata.provider.com'
+
+            manifest.taskdata = [
+                {
+                    "task_key": "cdc36ac9-29db-4709-8b99-40c586e79ba4",
+                    "datapoint_uri": "https://s3-us-west-2.amazonaws.com/temple-gates.hcaptcha.com/great-success.0.png",
+                    "datapoint_hash": "sha1:522909013d27c52f80b5b7183746cb6f28b6c841"
+                }
+            ]
+
+            with self.assertRaises(validation_data_errors[test_mode]) as e:
+                validate_func(manifest)()
+
+            self.assertIn('Specify only one', str(e.exception))
 
 
 class ViaTest(unittest.TestCase):
@@ -672,7 +726,240 @@ class ViaTest(unittest.TestCase):
 
 
 @httpretty.activate
+class TestManifestValidationHelpers(unittest.TestCase):
+    """ Tests groundtruth and taskdata validation. """
+
+    def setUp(self) -> None:
+        self.groundtruth = {
+            "https://image-uri.com": ["true", "true", "true"],
+            "https://image2-uri.com": ["true", "false", "true"]
+        }
+
+        self.taskdata = [
+            {
+                "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
+                "datapoint_uri": "https://domain.com/file1.jpg",
+                "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
+            },
+            {
+                "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
+                "datapoint_uri": "https://domain.com/file2.jpg",
+                "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
+            },
+        ]
+
+    @patch('basemodels.manifest.manifest.check_valid_image')
+    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
+    @patch('basemodels.manifest.manifest.validate_groundtruth_entry')
+    @patch('basemodels.pydantic.manifest.manifest.validate_groundtruth_entry')
+    def test_groundtruth_content_validation_errors(self,
+                                                   mock_pydantics_validator,
+                                                   mock_schematics_validator,
+                                                   pydantic_check_image,
+                                                   schematics_check_image):
+        """ Tests if validation errors are implemented correctly when validating groundtruth content. """
+
+        if test_mode == SCHEMATICS:
+            mock_schematics_validator.side_effect = SchematicsValidationError('Validation error')
+        elif test_mode == PYDANTIC:
+            # Choose any random model
+            mock_pydantics_validator.side_effect = PydanticValidationError(
+                'Validation error',
+                pydantic_basemodels.Manifest
+            )
+
+        with self.assertRaises(validation_base_errors[test_mode]):
+            groundtruth_classification_data_validators[test_mode](request_type=IMAGE_LABEL_BINARY,
+                                                                  field_name='groundtruth',
+                                                                  groundtruth=self.groundtruth)
+
+            if test_mode == SCHEMATICS:
+                schematics_check_image.assert_not_called()
+            else:
+                pydantic_check_image.assert_not_called()
+
+        schematics_check_image.side_effect = ImageValidationError('Image validator error')
+        pydantic_check_image.side_effect = ImageValidationError('Image validator error')
+
+        with self.assertRaises(validation_base_errors[test_mode]):
+            groundtruth_classification_data_validators[test_mode](request_type=IMAGE_LABEL_BINARY,
+                                                                  field_name='groundtruth',
+                                                                  groundtruth=self.groundtruth)
+
+            if test_mode == SCHEMATICS:
+                schematics_check_image.assert_called_once()
+            else:
+                pydantic_check_image.assert_called_once()
+
+    @patch('basemodels.manifest.manifest.check_valid_image')
+    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
+    @patch('basemodels.manifest.manifest.validate_taskdata_entry')
+    @patch('basemodels.pydantic.manifest.manifest.validate_taskdata_entry')
+    def test_taskdata_content_validation_errors(self,
+                                                mock_pydantics_validator,
+                                                mock_schematics_validator,
+                                                pydantic_check_image,
+                                                schematics_check_image):
+        """ Tests if validation errors are implemented correctly when validating taskdata content. """
+
+        if test_mode == SCHEMATICS:
+            mock_schematics_validator.side_effect = SchematicsValidationError('Validation error')
+        elif test_mode == PYDANTIC:
+            # Choose any random model
+            mock_pydantics_validator.side_effect = PydanticValidationError(
+                'Validation error',
+                pydantic_basemodels.Manifest
+            )
+
+        with self.assertRaises(validation_base_errors[test_mode]):
+            taskdata_classification_data_validators[test_mode](field_name='taskdata', task_data=self.taskdata)
+
+        schematics_check_image.side_effect = ImageValidationError('Image validator error')
+        pydantic_check_image.side_effect = ImageValidationError('Image validator error')
+
+        with self.assertRaises(validation_base_errors[test_mode]):
+            taskdata_classification_data_validators[test_mode](field_name='taskdata', task_data=self.taskdata)
+
+            if test_mode == SCHEMATICS:
+                schematics_check_image.called_once()
+            else:
+                pydantic_check_image.called_once()
+
+    def test_manifest_classification_validation_with_conflicts(self):
+        """ Tests whether classification is invalid due to conflict of provided groundtruth and taskdata. """
+        manifest = a_manifest()
+
+        # Resetting taskdata
+        manifest.taskdata = None
+        manifest.taskdata_uri = None
+        manifest.groundtruth = None
+        manifest.groundtruth_uri = None
+
+        # providing borth groundtruth and groundtruth_uri
+        manifest.groundtruth = self.groundtruth
+        manifest.groundtruth_uri = 'https://fake-url.com'
+
+        with self.assertRaises(validation_base_errors[test_mode]) as e:
+            # providing both groundtruth and groundtruth_uri and raising error
+            manifest_classification_data_validators[test_mode](manifest.to_primitive())
+            self.assertIn('not both', str(e.exception))
+
+        # Resetting taskdata
+        manifest.taskdata = None
+        manifest.taskdata_uri = None
+        manifest.groundtruth = None
+        manifest.groundtruth_uri = None
+
+        # providing borth groundtruth and groundtruth_uri
+        manifest.taskdata = self.taskdata
+        manifest.taskdata_uri = 'https://fake-url.com'
+
+        with self.assertRaises(validation_base_errors[test_mode]) as e:
+            # providing both groundtruth and groundtruth_uri and raising error
+            manifest_classification_data_validators[test_mode](manifest.to_primitive())
+            self.assertIn('not both', str(e.exception))
+
+    @patch('basemodels.manifest.manifest.validate_groundtruth_content')
+    @patch('basemodels.manifest.manifest.validate_taskdata_content')
+    def test_manifest_classification_validation_with_bad_uri(self,
+                                                             mock_taskdata_validator,
+                                                             mock_groundtruth_validator):
+        """ Tests whether classification is invalid due to bad groundtruth and taskdata URI. """
+        manifest = a_manifest()
+
+        # Resetting classification data
+        manifest.groundtruth = None
+        manifest.groundtruth_uri = None
+        manifest.taskdata = None
+        manifest.taskdata_uri = None
+
+        uri = 'https://fake-url.com'
+        httpretty.register_uri(method=httpretty.GET, uri=uri, status=400)
+
+        manifest.groundtruth_uri = uri
+        with self.assertRaises(validation_base_errors[test_mode]) as e:
+            manifest_classification_data_validators[test_mode](manifest.to_primitive())
+            self.assertIn('invalid URI', str(e.exception))
+
+            mock_groundtruth_validator.assert_not_called()
+            mock_taskdata_validator.assert_not_called()
+
+        manifest.groundtruth_uri = None
+        manifest.taskdata_uri = uri
+        with self.assertRaises(validation_base_errors[test_mode]) as e:
+            manifest_classification_data_validators[test_mode](manifest.to_primitive())
+            self.assertIn('invalid URI', str(e.exception))
+
+            mock_groundtruth_validator.assert_not_called()
+            mock_taskdata_validator.assert_not_called()
+
+    def test_manifest_classification_validation_with_empty_content(self):
+        """ Tests whether classification is invalid due to empty content in URI. """
+
+        uri = 'https://fake-url.com'
+        httpretty.register_uri(method=httpretty.GET, uri=uri, body=json.dumps([]))
+
+        manifest = a_manifest()
+
+        # Resetting classification data
+        manifest.groundtruth = None
+        manifest.taskdata = None
+
+        manifest.groundtruth_uri = uri
+        manifest.taskdata_uri = None
+        with self.assertRaises(validation_base_errors[test_mode]) as e:
+            manifest_classification_data_validators[test_mode](manifest.to_primitive())
+            self.assertIn('empty response', str(e.exception))
+
+        manifest.groundtruth_uri = None
+        manifest.taskdata_uri = uri
+        with self.assertRaises(validation_base_errors[test_mode]) as e:
+            manifest_classification_data_validators[test_mode](manifest.to_primitive())
+            self.assertIn('empty response', str(e.exception))
+
+    @patch('basemodels.pydantic.manifest.manifest.validate_groundtruth_content')
+    @patch('basemodels.pydantic.manifest.manifest.validate_taskdata_content')
+    @patch('basemodels.manifest.manifest.validate_groundtruth_content')
+    @patch('basemodels.manifest.manifest.validate_taskdata_content')
+    def test_manifest_classification_validation_with_good_uri(self,
+                                                              mock_schematics_taskdata_validator,
+                                                              mock_schematics_groundtruth_validator,
+                                                              mock_pydantic_taskdata_validator,
+                                                              mock_pydantic_groundtruth_validator):
+        """ Tests whether classification validation when manifest is not correct. """
+        manifest = a_manifest()
+
+        # Resetting classification data
+        manifest.groundtruth = None
+        manifest.taskdata = None
+
+        groundtruth_uri = 'https://gt-url.com'
+        taskdata_uri = 'https://td-url.com'
+
+        manifest.groundtruth_uri = groundtruth_uri
+        manifest.taskdata_uri = taskdata_uri
+
+        # Register
+        httpretty.register_uri(method=httpretty.GET, uri=groundtruth_uri, body=json.dumps(self.groundtruth))
+        httpretty.register_uri(method=httpretty.GET, uri=taskdata_uri, body=json.dumps(self.taskdata))
+
+        manifest_classification_data_validators[test_mode](manifest.to_primitive())
+
+        if test_mode == SCHEMATICS:
+            mock_gt_validator = mock_schematics_groundtruth_validator
+            mock_td_validator = mock_schematics_taskdata_validator
+        else:
+            mock_gt_validator = mock_pydantic_groundtruth_validator
+            mock_td_validator = mock_pydantic_taskdata_validator
+
+        mock_gt_validator.assert_called_once_with(manifest.request_type, 'groundtruth_uri', self.groundtruth)
+        mock_td_validator.assert_called_once_with('taskdata_uri', self.taskdata)
+
+
+@httpretty.activate
 class TestValidateManifestUris(unittest.TestCase):
+    """ Tests URI in Classification data in manifest: groundtruth and taskdata """
+
     def register_http_response(self, uri="https://uri.com", manifest=None, body=None):
         httpretty.register_uri(httpretty.GET, uri, body=json.dumps(body))
 
@@ -682,12 +969,7 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.register_http_response(uri, manifest, body)
 
-        test_models.validate_manifest_uris(manifest)
-
-    def test_no_uris(self):
-        """ should not raise if there are no uris to validate """
-        manifest = {}
-        test_models.validate_manifest_uris(manifest)
+        test_models.validate_manifest_classification_data(manifest)
 
     @patch('basemodels.manifest.manifest.check_valid_image')
     @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
@@ -740,21 +1022,13 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_multiple_choice", body)
 
-    @patch('basemodels.manifest.manifest.check_valid_image')
-    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
-    def test_groundtruth_uri_ilmc_invalid_value(self, pydantic_check_image, schematics_check_image):
+    def test_groundtruth_uri_ilmc_invalid_value(self):
         body = {
             "https://domain.com/file1.jpeg": [True, False],
         }
 
         with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_multiple_choice", body)
-
-        # Checks whether datapoint_uri is a valid image
-        if test_mode == SCHEMATICS:
-            schematics_check_image.assert_called()
-        elif test_mode == PYDANTIC:
-            pydantic_check_image.assert_called()
 
     @patch('basemodels.manifest.manifest.check_valid_image')
     @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
@@ -795,19 +1069,11 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_area_select", body)
 
-    @patch('basemodels.manifest.manifest.check_valid_image')
-    @patch('basemodels.pydantic.manifest.manifest.check_valid_image')
-    def test_groundtruth_uri_ilas_invalid_value(self, pydantic_check_image, schematics_check_image):
+    def test_groundtruth_uri_ilas_invalid_value(self):
         body = {"https://domain.com/file1.jpeg": [[True]]}
 
         with self.assertRaises(validation_base_errors[test_mode]):
             self.validate_groundtruth_response("image_label_area_select", body)
-
-        # Checks whether datapoint_uri is a valid image
-        if test_mode == SCHEMATICS:
-            schematics_check_image.assert_called()
-        elif test_mode == PYDANTIC:
-            pydantic_check_image.assert_called()
 
     def test_taskdata_empty(self):
         """ should raise if taskdata_uri contains no entries """
