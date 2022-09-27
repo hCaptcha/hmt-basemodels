@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-from pydantic import BaseModel, ValidationError, validator
+from unittest import mock
+
+from pydantic import ValidationError
 from typing import Any
+
 import logging
-import os
-import sys
 import schematics
 import basemodels
 from uuid import uuid4
 from copy import deepcopy
+
+from basemodels.manifest import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION, BASE_JOB_TYPES
 from basemodels.manifest.data.taskdata import TaskDataEntry
 
 # New pydantic model
@@ -602,10 +605,10 @@ class ManifestTest(unittest.TestCase):
         manifest = a_manifest()
         self.assertEqual(manifest.only_sign_results, False)
 
-    def test_default_store_pub_final_results(self):
-        """ Test whether flag 'store_pub_final_results' is False by default. """
+    def test_default_public_results(self):
+        """ Test whether flag 'public_results' is False by default. """
         manifest = a_manifest()
-        self.assertEqual(manifest.store_pub_final_results, False)
+        self.assertEqual(manifest.public_results, False)
 
 
 class ViaTest(unittest.TestCase):
@@ -678,8 +681,16 @@ class ViaTest(unittest.TestCase):
 
 @httpretty.activate
 class TestValidateManifestUris(unittest.TestCase):
-    def register_http_response(self, uri="https://uri.com", manifest=None, body=None):
-        httpretty.register_uri(httpretty.GET, uri, body=json.dumps(body))
+    def register_http_response(
+        self,
+        uri="https://uri.com",
+        manifest=None,
+        body=None,
+        method=httpretty.GET,
+        headers=None,
+    ):
+        headers = headers or {}
+        httpretty.register_uri(method, uri, body=json.dumps(body), **headers)
 
     def validate_groundtruth_response(self, request_type, body):
         uri = "https://uri.com"
@@ -695,11 +706,13 @@ class TestValidateManifestUris(unittest.TestCase):
         test_models.validate_manifest_uris(manifest)
 
     def test_groundtruth_uri_ilb_valid(self):
+        groundtruth_uri = "https://domain.com/123/file1.jpeg"
         body = {
-            "https://domain.com/123/file1.jpeg": ["false", "false", "false"],
+            groundtruth_uri : ["false", "false", "false"],
             "https://domain.com/456/file2.jpeg": ["false", "true", "false"],
         }
 
+        self.register_http_response(groundtruth_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
         self.validate_groundtruth_response("image_label_binary", body)
 
     def test_groundtruth_uri_ilb_invalid(self):
@@ -716,11 +729,13 @@ class TestValidateManifestUris(unittest.TestCase):
             self.validate_groundtruth_response("image_label_binary", body)
 
     def test_groundtruth_uri_ilmc_valid(self):
+        groundtruth_uri = "https://domain.com/file1.jpeg"
         body = {
-            "https://domain.com/file1.jpeg": [["cat"], ["cat"], ["cat"]],
+            groundtruth_uri: [["cat"], ["cat"], ["cat"]],
             "https://domain.com/file2.jpeg": [["dog"], ["dog"], ["dog"]],
         }
 
+        self.register_http_response(groundtruth_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
         self.validate_groundtruth_response("image_label_multiple_choice", body)
 
     def test_groundtruth_uri_ilmc_invalid_key(self):
@@ -738,8 +753,9 @@ class TestValidateManifestUris(unittest.TestCase):
             self.validate_groundtruth_response("image_label_multiple_choice", body)
 
     def test_groundtruth_uri_ilas_valid(self):
+        groundtruth_uri = "https://domain.com/file1.jpeg"
         body = {
-            "https://domain.com/file1.jpeg": [
+            groundtruth_uri: [
                 [
                     {
                         "entity_name": 0,
@@ -750,6 +766,7 @@ class TestValidateManifestUris(unittest.TestCase):
             ]
         }
 
+        self.register_http_response(groundtruth_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
         self.validate_groundtruth_response("image_label_area_select", body)
 
     def test_groundtruth_uri_ilas_invalid_key(self):
@@ -834,11 +851,11 @@ class TestValidateManifestUris(unittest.TestCase):
             "groundtruth_uri": groundtruth_uri,
             "request_type": "image_label_binary",
         }
-
+        datapoint_uri = "https://domain.com/file1.jpg"
         taskdata = [
             {
                 "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
-                "datapoint_uri": "https://domain.com/file1.jpg",
+                "datapoint_uri": datapoint_uri,
                 "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
             },
             {
@@ -847,12 +864,14 @@ class TestValidateManifestUris(unittest.TestCase):
                 "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
             },
         ]
-
+        groundtruth_image_uri = "https://domain.com/123/file1.jpeg"
         groundtruth = {
-            "https://domain.com/123/file1.jpeg": ["false", "false", "false"],
+            groundtruth_image_uri: ["false", "false", "false"],
             "https://domain.com/456/file2.jpeg": ["false", "true", "false"],
         }
 
+        self.register_http_response(datapoint_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
+        self.register_http_response(groundtruth_image_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
         self.register_http_response(taskdata_uri, manifest, taskdata)
         self.register_http_response(groundtruth_uri, manifest, groundtruth)
 
@@ -903,8 +922,6 @@ class TaskEntryTest(unittest.TestCase):
 
         taskdata.pop("metadata")
         self.assertIsNone(TaskDataEntry(taskdata).validate())
-
-
 
 
 if __name__ == "__main__":
