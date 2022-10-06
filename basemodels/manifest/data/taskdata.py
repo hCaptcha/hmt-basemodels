@@ -46,14 +46,11 @@ def validate_content_type(uri: str) -> None:
         response = requests.head(uri)
         response.raise_for_status()
     except RequestException as e:
-        raise ValidationError(f"taskdata content type ({uri}) validation failed", TaskDataEntry()) from e
+        raise ValidationError(f"taskdata content type ({uri}) validation failed") from e
 
     content_type = response.headers.get("Content-Type", "")
     if content_type not in SUPPORTED_CONTENT_TYPES:
-        raise ValidationError(
-            f"taskdata entry datapoint_uri has unsupported type {content_type}",
-            TaskDataEntry(),
-        )
+        raise ValidationError(f"taskdata entry datapoint_uri has unsupported type {content_type}")
 
 
 def validate_taskdata_entry(value: dict, validate_image_content_type: bool) -> None:

@@ -1,9 +1,8 @@
 from typing import Union
 
 import requests
-from pydantic import ValidationError
 from requests import RequestException
-from schematics.models import Model
+from schematics.models import Model, ValidationError
 from schematics.types import StringType, ListType, URLType, ModelType, IntType, FloatType, UnionType
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
@@ -89,14 +88,11 @@ def validate_content_type(uri: str) -> None:
         response = requests.head(uri)
         response.raise_for_status()
     except RequestException as e:
-        raise ValidationError(f"groundtruth content type ({uri}) validation failed", GroundtruthEntryKeyModel) from e
+        raise ValidationError(f"groundtruth content type ({uri}) validation failed") from e
 
     content_type = response.headers.get("Content-Type", "")
     if content_type not in SUPPORTED_CONTENT_TYPES:
-        raise ValidationError(
-            f"groundtruth entry has unsupported type {content_type}",
-            GroundtruthEntryKeyModel,
-        )
+        raise ValidationError(f"groundtruth entry has unsupported type {content_type}")
 
 
 def validate_groundtruth_entry(
