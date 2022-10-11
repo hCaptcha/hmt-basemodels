@@ -2,7 +2,7 @@ import uuid
 import requests
 from requests.exceptions import RequestException
 from typing_extensions import Literal
-from typing import Dict, Callable, Any, Union, Type, List, Optional
+from typing import Dict, Union, List, Optional
 from enum import Enum
 from uuid import UUID, uuid4
 from .data.groundtruth import validate_groundtruth_entry
@@ -10,7 +10,9 @@ from .data.taskdata import validate_taskdata_entry
 from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl
 from pydantic.fields import Field
 from decimal import Decimal
-from .restricted_audience import RestrictedAudience
+from basemodels.pydantic.manifest.restricted_audience import RestrictedAudience
+from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
+
 
 # Validator function for taskdata and taskdata_uri fields
 def validator_taskdata_uri(cls, value, values, **kwargs):
@@ -20,9 +22,11 @@ def validator_taskdata_uri(cls, value, values, **kwargs):
         raise ValidationError(u'Specify only one of taskdata {} or taskdata_uri {}'.format(taskdata, taskdata_uri))
     return value
 
+
 # A validator function for UUID fields
 def validate_uuid(cls, value):
     return value or uuid.uuid4()
+
 
 # Base job types
 class BaseJobTypesEnum(str, Enum):
@@ -39,6 +43,7 @@ class BaseJobTypesEnum(str, Enum):
     image_label_semantic_segmentation_multiple_options = "image_label_semantic_segmentation_multiple_options"
     image_label_text = "image_label_text"
     multi_challenge = "multi_challenge"
+
 
 # Return a request type validator function
 class RequestTypeValidator(object):
@@ -60,11 +65,13 @@ class RequestTypeValidator(object):
                     "multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
         return value
 
+
 # Shape types enum
 class ShapeTypes(str, Enum):
     point = "point"
     bounding_box = "bounding_box"
     polygon = "polygon"
+
 
 class Model(BaseModel):
     def to_primitive(self):
@@ -81,6 +88,7 @@ class Model(BaseModel):
         if return_new:
             return self.__class__(**out_dict)
 
+
 class Webhook(Model):
     """ Model for webhook configuration """
     webhook_id: UUID
@@ -91,7 +99,6 @@ class Webhook(Model):
     # job_skipped: List[str] = None
     # job_inserted : List[str] = None
     # job_activated : List[str] = None
-
 
 
 class TaskData(BaseModel):
@@ -338,6 +345,7 @@ def validate_groundtruth_uri(manifest: dict):
     Returns entries count if succeeded
     """
     request_type = manifest.get('request_type', '')
+    validate_image_content_type = request_type in JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
     uri_key = "groundtruth_uri"
     uri = manifest.get(uri_key)
     if uri is None:
@@ -351,11 +359,13 @@ def validate_groundtruth_uri(manifest: dict):
         if isinstance(data, dict):
             for k, v in data.items():
                 entries_count += 1
-                validate_groundtruth_entry(k, v, request_type)
+                validate_groundtruth_entry(k, v, request_type, validate_image_content_type)
+                validate_image_content_type = False
         else:
             for v in data:
                 entries_count += 1
-                validate_groundtruth_entry("", v, request_type)
+                validate_groundtruth_entry("", v, request_type, validate_image_content_type)
+                validate_image_content_type = False
 
     except (ValidationError, RequestException) as e:
         raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
@@ -363,11 +373,14 @@ def validate_groundtruth_uri(manifest: dict):
     if entries_count == 0:
         raise ValidationError(f"fetched {uri_key} is empty", Manifest)
 
+
 def validate_taskdata_uri(manifest: dict):
     """
     Validate taskdata_uri
     Returns entries count if succeeded
     """
+    request_type = manifest.get('request_type', '')
+    validate_image_content_type = request_type in JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
     uri_key = "taskdata_uri"
     uri = manifest.get(uri_key)
     if uri is None:
@@ -380,12 +393,15 @@ def validate_taskdata_uri(manifest: dict):
         data = response.json()
         for v in data:
             entries_count += 1
-            validate_taskdata_entry(v)
+            validate_taskdata_entry(v, validate_image_content_type)
+            validate_image_content_type = False  # We want to validate only first entry for content type
+
     except (ValidationError, RequestException) as e:
         raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
 
     if entries_count == 0:
         raise ValidationError(f"fetched {uri_key} is empty", Manifest)
+
 
 def validate_manifest_uris(manifest: dict):
     """ Fetch & validate manifest's remote objects """
