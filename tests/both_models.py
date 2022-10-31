@@ -940,10 +940,6 @@ class TaskEntryTest(unittest.TestCase):
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 
 
-
-
-
-
 if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger("urllib3").setLevel(logging.INFO)
