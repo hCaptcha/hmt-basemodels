@@ -65,20 +65,18 @@ class TaskData(Model):
     task_key = UUIDType(required=True)
     datapoint_uri = URLType()
     datapoint_hash = StringType(required=True, min_length=10)
-    datapoint_text = StringType()
-    is_text_question = BooleanType()
-
-    def validate_datapoint_text(self, data, value):
-        if data.get('is_text_question') and not value:
-            raise ValidationError("datapoint_text is missing.")
-        return value
+    datapoint_text = DictType(StringType, StringType)
 
     def validate_datapoint_uri(self, data, value):
-        if not data.get('is_text_question'):
-            if not value:
-                raise ValidationError("datapoint_uri is missing.")
-            if len(value) < 10:
-                raise ValidationError("datapoint_uri length is less than 10")
+        """
+        Validate datapoint_uri.
+
+        Raise error if no datapoint_text and no value for URI or if length of URI less than 10.
+        """
+        if not value and not data.get('datapoint_text'):
+            raise ValidationError("datapoint_uri is missing.")
+        if len(value) < 10:
+            raise ValidationError("datapoint_uri length is less than 10")
         return value
 
 
