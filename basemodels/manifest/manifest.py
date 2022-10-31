@@ -1,16 +1,16 @@
 import uuid
 import requests
 from requests.exceptions import RequestException
-from typing import Dict, Callable, Any, Union
+from typing import Callable, Any
 from schematics.models import Model, ValidationError
 from schematics.exceptions import BaseError
-from schematics.types import StringType, DecimalType, BooleanType, IntType, DictType, ListType, URLType, FloatType, \
-    UUIDType, ModelType, BooleanType, UnionType, NumberType, BaseType
+from schematics.types import StringType, DecimalType, IntType, DictType, ListType, URLType, FloatType, \
+    UUIDType, ModelType, BooleanType, UnionType
 
-from .data.groundtruth import validate_groundtruth_entry
-from .data.taskdata import validate_taskdata_entry
-from .data.preprocess import Preprocess
-from .restricted_audience import RestrictedAudience
+from basemodels.manifest.data.groundtruth import validate_groundtruth_entry
+from basemodels.manifest.data.taskdata import validate_taskdata_entry
+from basemodels.manifest.restricted_audience import RestrictedAudience
+from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
 
 BASE_JOB_TYPES = [
     "image_label_binary",
@@ -92,6 +92,13 @@ class RequestConfig(Model):
     minimum_selection_area_per_shape = IntType()
     multiple_choice_max_choices = IntType(default=1)
     multiple_choice_min_choices = IntType(default=1)
+    overlap_threshold = FloatType(required=False)
+    answer_type = StringType(choices=["int", "float", "str"], default="str")
+    max_value = FloatType()
+    min_value = FloatType()
+    max_length = IntType()
+    min_length = IntType()
+    sig_figs = IntType()
 
 
 class InternalConfig(Model):
@@ -181,6 +188,8 @@ class Manifest(Model):
     job_id = UUIDType(default=uuid.uuid4)
     job_total_tasks = IntType(required=True)
     network = StringType(required=False)
+    only_sign_results = BooleanType(default=False,)
+    public_results = BooleanType(default=False,)
 
     requester_restricted_answer_set = DictType(DictType(StringType))
 
@@ -279,7 +288,7 @@ class Manifest(Model):
     webhook = ModelType(Webhook)
 
 
-def traverse_json_entries(data: Any, callback: Callable) -> int:
+def traverse_json_entries(data: Any, callback: Callable, validate_image_content_type: bool) -> int:
     """
     Traverse json and execute callback for each top-level entry
 
@@ -294,12 +303,14 @@ def traverse_json_entries(data: Any, callback: Callable) -> int:
     if isinstance(data, dict):
         for k, v in data.items():
             entries_count += 1
-            callback(k, v)
+            callback(k, v, validate_image_content_type)
+            validate_image_content_type = False
 
     elif isinstance(data, list):
         for v in data:
             entries_count += 1
-            callback(None, v)
+            callback(None, v, validate_image_content_type)
+            validate_image_content_type = False
 
     return entries_count
 
@@ -308,13 +319,13 @@ def validate_manifest_uris(manifest: dict):
     """ Fetch & validate manifest's remote objects """
 
     request_type = manifest.get('request_type', '')
-
     entry_validators = {
-        "groundtruth_uri": lambda k, v: validate_groundtruth_entry(k, v, request_type),
-        "taskdata_uri": lambda _, v: validate_taskdata_entry(v)
+        "groundtruth_uri": lambda k, v, validate: validate_groundtruth_entry(k, v, request_type, validate),
+        "taskdata_uri": lambda _, v, validate: validate_taskdata_entry(v, validate)
     }
 
     for uri_key, validate_entry in entry_validators.items():
+        validate_image_content_type = request_type in JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
         uri = manifest.get(uri_key)
 
         if uri is None:
@@ -324,7 +335,7 @@ def validate_manifest_uris(manifest: dict):
             response = requests.get(uri)
             response.raise_for_status()
 
-            entries_count = traverse_json_entries(response.json(), validate_entry)
+            entries_count = traverse_json_entries(response.json(), validate_entry, validate_image_content_type)
         except (BaseError, RequestException) as e:
             raise ValidationError(f"{uri_key} validation failed: {e}") from e
 

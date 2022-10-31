@@ -1,6 +1,11 @@
 from typing import Union
-from schematics.models import Model
+
+import requests
+from requests import RequestException
+from schematics.models import Model, ValidationError
 from schematics.types import StringType, ListType, URLType, ModelType, IntType, FloatType, UnionType
+
+from basemodels.constants import SUPPORTED_CONTENT_TYPES
 
 
 def create_wrapper_model(type):
@@ -77,7 +82,25 @@ groundtruth_entry_models_map = {
 }
 
 
-def validate_groundtruth_entry(key: str, value: Union[dict, list], request_type: str):
+def validate_content_type(uri: str) -> None:
+    """ Validate uri content type """
+    try:
+        response = requests.head(uri)
+        response.raise_for_status()
+    except RequestException as e:
+        raise ValidationError(f"groundtruth content type ({uri}) validation failed") from e
+
+    content_type = response.headers.get("Content-Type", "")
+    if content_type not in SUPPORTED_CONTENT_TYPES:
+        raise ValidationError(f"groundtruth entry has unsupported type {content_type}")
+
+
+def validate_groundtruth_entry(
+    key: str,
+    value: Union[dict, list],
+    request_type: str,
+    validate_image_content_type: bool,
+):
     """ Validate key & value of groundtruth entry based on request_type """
     GroundtruthEntryValueModel = groundtruth_entry_models_map.get(request_type)
 
@@ -86,3 +109,6 @@ def validate_groundtruth_entry(key: str, value: Union[dict, list], request_type:
 
     validate_wrapper_model(GroundtruthEntryKeyModel, key)
     validate_wrapper_model(GroundtruthEntryValueModel, value)
+
+    if validate_image_content_type:
+        validate_content_type(key)

@@ -30,7 +30,7 @@ SIMPLE = {
             {"dfe03e7c-f417-4726-8b14-ae033a3cc66e": {"score": 1}},
             {"dfe03e7c-f417-4726-8b12-ae033a3cc66a": {"score": 1}},
         ]
-    },
+    }
 }
 
 TASK = {
@@ -82,3 +82,7 @@ class PydanticTest(TestCase):
         taskdata.pop("metadata")
         TaskDataEntry(**taskdata)
 
+    def test_default_only_sign_results(self):
+        """ Test whether flat 'only_sign_results' is False by default. """
+        manifest = Manifest(**self.m)
+        self.assertEqual(manifest.only_sign_results, False)
