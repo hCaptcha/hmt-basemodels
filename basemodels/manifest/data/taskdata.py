@@ -50,7 +50,7 @@ class TaskDataEntry(Model):
         """
         if not value and not data.get('datapoint_text'):
             raise ValidationError("datapoint_uri is missing.")
-        if len(value) < 10:
+        if value and len(value) < 10 and not data.get('datapoint_text'):
             raise ValidationError("datapoint_uri length is less than 10")
         return value
 
