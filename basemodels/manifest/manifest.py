@@ -63,8 +63,21 @@ class Webhook(Model):
 class TaskData(Model):
     """ objects within taskdata list in Manifest """
     task_key = UUIDType(required=True)
-    datapoint_uri = URLType(required=True, min_length=10)
+    datapoint_uri = URLType()
     datapoint_hash = StringType(required=True, min_length=10)
+    datapoint_text = DictType(StringType, StringType)
+
+    def validate_datapoint_uri(self, data, value):
+        """
+        Validate datapoint_uri.
+
+        Raise error if no datapoint_text and no value for URI or if length of URI less than 10.
+        """
+        if not value and not data.get('datapoint_text'):
+            raise ValidationError("datapoint_uri is missing.")
+        if value and len(value) < 10 and not data.get('datapoint_text'):
+            raise ValidationError("datapoint_uri length is less than 10")
+        return value
 
 
 class RequestConfig(Model):
