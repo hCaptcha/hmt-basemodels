@@ -65,7 +65,7 @@ class TaskData(Model):
     task_key = UUIDType(required=True)
     datapoint_uri = URLType()
     datapoint_hash = StringType(required=True, min_length=10)
-    datapoint_text = DictType(StringType, StringType)
+    datapoint_text = DictType(StringType)
 
     def validate_datapoint_uri(self, data, value):
         """

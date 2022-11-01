@@ -27,7 +27,7 @@ class TaskDataEntry(Model):
     """
     task_key = UUIDType()
     datapoint_uri = URLType()
-    datapoint_text = DictType(StringType(), StringType())
+    datapoint_text = DictType(StringType)
     datapoint_hash = StringType()
     metadata = DictType(
       UnionType([
