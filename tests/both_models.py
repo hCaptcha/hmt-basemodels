@@ -315,7 +315,7 @@ class ManifestTest(unittest.TestCase):
             "confidence": [{"minimum_client_confidence": {"score": 0.9}}],
             "min_difficulty": 2,
         }
-        
+
         if test_mode == PYDANTIC:
             manifest.restricted_audience = PyRestrictedAudience(**restricted_audience)
         else:
@@ -397,6 +397,15 @@ class ManifestTest(unittest.TestCase):
         ]:
             assert_raises(data)
 
+        for data in [
+            {"role": "webmaster"},
+            {"role": [{"WEBMASTER": {"score": 1}}]},
+            {"role": [{"webmaster": "US"}]},
+            {"role": [{"webmaster": {"nonsense": 1}}]},
+            {"role": [{"webmaster": {"score": -0.1}}]}
+        ]:
+            assert_raises(data)
+
         sitekey = "9d98b147-dc5a-4ea4-82cf-0ced5b2434d2"
         for data in [
             {"sitekey": "sitekey"},
@@ -470,6 +479,11 @@ class ManifestTest(unittest.TestCase):
                 {"desktop": {"score": 0}},
                 {"mobile": {"score": 1}},
                 {"modern_browser": {"score": 0.9}},
+            ],
+            "role": [
+                {"webmaster": {"score": 0.5}},
+                {"pro": {"score": 0.9}},
+                {"enterprise": {"score": 1}},
             ],
             "sitekey": [
                 {str(uuid4()): {"score": 0.5}},

@@ -10,6 +10,13 @@ class RestrictedAudienceBrowserEnum(str, Enum):
     desktop = "desktop"
     modern_browser = "modern_browser"
 
+
+class RestrictedAudienceRoleEnum(str, Enum):
+    webmaster = "webmaster"
+    pro = "pro"
+    enterprise = "enterprise"
+
+
 class RestrictedAudienceConfidenceEnum(str, Enum):
     minimum_client_confidence = "minimum_client_confidence"
 
@@ -19,13 +26,14 @@ class RestrictedAudienceScore(BaseModel):
 
 
 class RestrictedAudience(BaseModel):
-    lang: Optional[List[Dict[str,RestrictedAudienceScore]]]
-    country: Optional[List[Dict[str,RestrictedAudienceScore]]]
-    sitekey: Optional[List[Dict[str,RestrictedAudienceScore]]]
-    serverdomain: Optional[List[Dict[str,RestrictedAudienceScore]]]
-    browser: Optional[List[Dict[RestrictedAudienceBrowserEnum,RestrictedAudienceScore]]]
-    confidence: Optional[List[Dict[RestrictedAudienceConfidenceEnum,RestrictedAudienceScore]]]
-    reason: Optional[List[Dict[str,RestrictedAudienceScore]]]
+    lang: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    country: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    role: Optional[List[Dict[RestrictedAudienceRoleEnum, RestrictedAudienceScore]]]
+    sitekey: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    serverdomain: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    browser: Optional[List[Dict[RestrictedAudienceBrowserEnum, RestrictedAudienceScore]]]
+    confidence: Optional[List[Dict[RestrictedAudienceConfidenceEnum, RestrictedAudienceScore]]]
+    reason: Optional[List[Dict[str, RestrictedAudienceScore]]]
 
     min_difficulty: Optional[conint(ge=0, le=4, strict=True)]
     min_user_score: Optional[confloat(ge=0, le=1)]
@@ -46,7 +54,7 @@ class RestrictedAudience(BaseModel):
         for entry, value in values.items():
             if value is None:
                 continue
-            if entry in ["lang", "country", "browser", "sitekey", "serverdomain", "confidence"]:
+            if entry in ["lang", "country", "browser", "role", "sitekey", "serverdomain", "confidence"]:
                 if isinstance(value, list):
                     for restriction in value:
                         if len(restriction) > 1:

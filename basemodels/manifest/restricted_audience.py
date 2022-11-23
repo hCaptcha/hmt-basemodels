@@ -21,7 +21,7 @@ class ScoreType(BaseType):
 
         if not isinstance(score, (float, int)):
             raise ValidationError("invalid score value type")
-        
+
         if score > 1 or score < 0:
             raise ValidationError("invalid score value")
 
@@ -30,6 +30,7 @@ class RestrictedAudience(Model):
     lang = ListType(DictType(ScoreType), required=False)
     country = ListType(DictType(ScoreType), required=False)
     browser = ListType(DictType(ScoreType), required=False)
+    role = ListType(DictType(ScoreType), required=False)
     sitekey = ListType(DictType(ScoreType), required=False)
     serverdomain = ListType(DictType(ScoreType), required=False)
     confidence = ListType(DictType(ScoreType), required=False)
@@ -84,6 +85,10 @@ class RestrictedAudience(Model):
 
     def validate_browser(self, data, value):
         self.keys_choices_check(value, choices=["tablet", "mobile", "desktop", "modern_browser"])
+        return value
+
+    def validate_role(self, data, value):
+        self.keys_choices_check(value, choices=["webmaster", "pro", "enterprise"])
         return value
 
     def validate_sitekey(self, data, value):
