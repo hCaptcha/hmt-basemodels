@@ -601,11 +601,17 @@ class ManifestTest(unittest.TestCase):
         del manifest["requester_question_example"]
         validate_func(create_manifest(manifest))()
 
-        manifest["requester_question_example"] = {"answer_example_uri": FAKE_URL, "answer_example_coords": "coords"}
-        with self.assertRaises(validation_base_errors[test_mode]):
-            validate_func(create_manifest(manifest))()
-
+        manifest["requester_question_example_extra"] = {
+            "answer_example_uri": FAKE_URL,
+            "answer_example_coords": "coords"
+        }
         manifest['request_type'] = "image_label_area_select"
+        validate_func(create_manifest(manifest))()
+
+        manifest["requester_question_example_extra"] = [{
+            "answer_example_uri": FAKE_URL,
+            "answer_example_coords": "coords"
+        }]
         validate_func(create_manifest(manifest))()
 
     def test_default_only_sign_results(self):
