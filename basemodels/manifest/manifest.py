@@ -144,9 +144,11 @@ class NestedManifest(Model):
     requester_min_repeats = IntType(default=1)
     requester_question = DictType(StringType)
 
-    requester_question_example = UnionType([
-        URLType, DictType(StringType), ListType(UnionType([URLType, DictType(StringType)]))
-    ])
+    requester_question_example = UnionType((URLType, ListType), field=URLType)
+
+    requester_question_example_extra = UnionType([
+        DictType(StringType), ListType(DictType(StringType))
+    ], required=False)
 
     def validate_requester_question_example(self, data, value):
         # validation runs before other params, so need to handle missing case
@@ -155,12 +157,6 @@ class NestedManifest(Model):
 
         # based on https://github.com/hCaptcha/hmt-basemodels/issues/27#issuecomment-590706643
         supports_lists = ['image_label_area_select', 'image_label_binary']
-
-        supports_dicts = [
-            'image_label_area_select',
-        ]
-        if isinstance(value, dict) and not data['request_type'] in supports_dicts:
-            raise ValidationError("Dicts are not allowed in this challenge type")
 
         if isinstance(value, list) and not data['request_type'] in supports_lists:
             raise ValidationError("Lists are not allowed in this challenge type")
@@ -218,8 +214,10 @@ class Manifest(Model):
     requester_min_repeats = IntType(default=1)
     requester_question = DictType(StringType)
 
-    requester_question_example = UnionType([
-        URLType, DictType(StringType), ListType(UnionType([URLType, DictType(StringType)]))
+    requester_question_example = UnionType((URLType, ListType), field=URLType)
+
+    requester_question_example_extra = UnionType([
+        DictType(StringType), ListType(DictType(StringType))
     ])
 
     def validate_requester_question_example(self, data, value):
@@ -229,12 +227,6 @@ class Manifest(Model):
 
         # based on https://github.com/hCaptcha/hmt-basemodels/issues/27#issuecomment-590706643
         supports_lists = ['image_label_area_select', 'image_label_binary']
-
-        supports_dicts = [
-            'image_label_area_select',
-        ]
-        if isinstance(value, dict) and not data['request_type'] in supports_dicts:
-            raise ValidationError("Dicts are not allowed in this challenge type")
 
         if isinstance(value, list) and not data['request_type'] in supports_lists:
             raise ValidationError("Lists are not allowed in this challenge type")

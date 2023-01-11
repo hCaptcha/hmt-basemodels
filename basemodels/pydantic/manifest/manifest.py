@@ -230,7 +230,8 @@ class Manifest(Model):
     requester_min_repeats: int = 1
     requester_question: Optional[Dict[str, str]]
 
-    requester_question_example: Optional[Union[HttpUrl, Dict[str, str], List[Union[HttpUrl, Dict[str, str]]]]]
+    requester_question_example: Optional[Union[HttpUrl, List[HttpUrl]]]
+    requester_question_example_extra: Optional[Union[Dict[str, str], List[Union[Dict[str, str]]]]]
 
     unsafe_content: bool = False
     task_bid_price: float
@@ -316,13 +317,6 @@ class Manifest(Model):
             BaseJobTypesEnum.image_label_area_select,
             BaseJobTypesEnum.image_label_binary,
         ]
-
-        supports_dict = [
-            BaseJobTypesEnum.image_label_area_select,
-        ]
-
-        if isinstance(value, dict) and not (values["request_type"] in supports_dict):
-            raise ValueError("Dicts are not allowed in this challenge type")
 
         if isinstance(value, list) and not (values["request_type"] in supports_lists):
             raise ValueError("Lists are not allowed in this challenge type")
