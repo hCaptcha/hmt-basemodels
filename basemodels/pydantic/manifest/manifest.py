@@ -231,7 +231,7 @@ class Manifest(Model):
     requester_question: Optional[Dict[str, str]]
 
     requester_question_example: Optional[Union[HttpUrl, List[HttpUrl]]]
-    requester_question_example_extra: Optional[Union[Dict[str, str], List[Union[Dict[str, str]]]]]
+    requester_example_extra_fields: Optional[Union[Dict[str, str], List[Union[Dict[str, str]]]]]
 
     unsafe_content: bool = False
     task_bid_price: float

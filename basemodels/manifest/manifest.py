@@ -146,7 +146,7 @@ class NestedManifest(Model):
 
     requester_question_example = UnionType((URLType, ListType), field=URLType)
 
-    requester_question_example_extra = UnionType([
+    requester_example_extra_fields = UnionType([
         DictType(StringType), ListType(DictType(StringType))
     ], required=False)
 
@@ -216,7 +216,7 @@ class Manifest(Model):
 
     requester_question_example = UnionType((URLType, ListType), field=URLType)
 
-    requester_question_example_extra = UnionType([
+    requester_example_extra_fields = UnionType([
         DictType(StringType), ListType(DictType(StringType))
     ])
 
