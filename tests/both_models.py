@@ -601,6 +601,19 @@ class ManifestTest(unittest.TestCase):
         del manifest["requester_question_example"]
         validate_func(create_manifest(manifest))()
 
+        manifest["requester_example_extra_fields"] = {
+            "answer_example_uri": FAKE_URL,
+            "answer_example_coords": "coords"
+        }
+        manifest['request_type'] = "image_label_area_select"
+        validate_func(create_manifest(manifest))()
+
+        manifest["requester_example_extra_fields"] = [{
+            "answer_example_uri": FAKE_URL,
+            "answer_example_coords": "coords"
+        }]
+        validate_func(create_manifest(manifest))()
+
     def test_default_only_sign_results(self):
         """ Test whether flag 'only_sign_results' is False by default. """
         manifest = a_manifest()

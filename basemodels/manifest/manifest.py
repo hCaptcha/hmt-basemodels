@@ -146,6 +146,10 @@ class NestedManifest(Model):
 
     requester_question_example = UnionType((URLType, ListType), field=URLType)
 
+    requester_example_extra_fields = UnionType([
+        DictType(StringType), ListType(DictType(StringType))
+    ], required=False)
+
     def validate_requester_question_example(self, data, value):
         # validation runs before other params, so need to handle missing case
         if not data.get('request_type'):
@@ -211,6 +215,10 @@ class Manifest(Model):
     requester_question = DictType(StringType)
 
     requester_question_example = UnionType((URLType, ListType), field=URLType)
+
+    requester_example_extra_fields = UnionType([
+        DictType(StringType), ListType(DictType(StringType))
+    ])
 
     def validate_requester_question_example(self, data, value):
         # validation runs before other params, so need to handle missing case
