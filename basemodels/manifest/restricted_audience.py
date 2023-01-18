@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from schematics.models import Model, ValidationError
-from schematics.types import BaseType, ListType, StringType, DictType, IntType, FloatType
+from schematics.types import BaseType, DictType, FloatType, IntType, ListType
 
 
 class ScoreType(BaseType):
@@ -34,6 +34,7 @@ class RestrictedAudience(Model):
     serverdomain = ListType(DictType(ScoreType), required=False)
     confidence = ListType(DictType(ScoreType), required=False)
     reason = ListType(DictType(ScoreType), required=False)
+    roles = ListType(DictType(ScoreType), required=False)
 
     min_difficulty = IntType(required=False, min_value=0, max_value=4)
     min_user_score = FloatType(required=False, min_value=0, max_value=1)

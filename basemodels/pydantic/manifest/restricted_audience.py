@@ -27,6 +27,7 @@ class RestrictedAudience(BaseModel):
     browser: Optional[List[Dict[RestrictedAudienceBrowserEnum, RestrictedAudienceScore]]]
     confidence: Optional[List[Dict[RestrictedAudienceConfidenceEnum, RestrictedAudienceScore]]]
     reason: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    roles: Optional[List[Dict[str, RestrictedAudienceScore]]]
 
     min_difficulty: Optional[conint(ge=0, le=4, strict=True)]
     min_user_score: Optional[confloat(ge=0, le=1)]

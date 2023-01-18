@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from unittest import mock
 
 from pydantic import ValidationError
 from typing import Any
@@ -10,7 +9,6 @@ import basemodels
 from uuid import uuid4
 from copy import deepcopy
 
-from basemodels.manifest import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION, BASE_JOB_TYPES
 from basemodels.manifest.data.taskdata import TaskDataEntry
 
 # New pydantic model
@@ -184,7 +182,7 @@ class ManifestTest(unittest.TestCase):
 
     def test_can_serialize(self):
         """validate that we can dump this to json in downstream services"""
-        j = to_json(a_manifest())
+        to_json(a_manifest())
 
     def test_can_fail_toconstruct(self):
         """Tests that the manifest raises an Error when called with falsy parameters."""
@@ -886,7 +884,7 @@ class TaskEntryTest(unittest.TestCase):
 
         with self.assertRaises(schematics.exceptions.DataError):
             taskdata.get("metadata")["key_1"] += 1024 * "a"
-            r = TaskDataEntry(taskdata).validate()
+            TaskDataEntry(taskdata).validate()
 
         taskdata.pop("metadata")
         self.assertIsNone(TaskDataEntry(taskdata).validate())
@@ -897,11 +895,11 @@ class TaskEntryTest(unittest.TestCase):
         with self.assertRaises(schematics.exceptions.DataError):
             taskdata["datapoint_text"] = {}
             taskdata["datapoint_uri"] = ""
-            invalid = TaskDataEntry(taskdata).validate()
+            TaskDataEntry(taskdata).validate()
 
         with self.assertRaises(schematics.exceptions.DataError):
             taskdata["datapoint_uri"] = "http://com"
-            invalid = TaskDataEntry(taskdata).validate()
+            TaskDataEntry(taskdata).validate()
 
         taskdata["datapoint_uri"] = "https://domain.com/file1.jpg"
         self.assertIsNone(TaskDataEntry(taskdata).validate())

@@ -1,4 +1,4 @@
-from unittest import TestCase, mock
+from unittest import TestCase
 from copy import deepcopy
 
 from pydantic.error_wrappers import ValidationError
@@ -29,7 +29,7 @@ SIMPLE = {
         "sitekey": [
             {"dfe03e7c-f417-4726-8b14-ae033a3cc66e": {"score": 1}},
             {"dfe03e7c-f417-4726-8b12-ae033a3cc66a": {"score": 1}},
-        ]
+        ],
     },
 }
 

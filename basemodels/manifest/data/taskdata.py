@@ -1,7 +1,7 @@
 import requests
 from requests import RequestException
 from schematics.models import Model, ValidationError
-from schematics.types import UUIDType, URLType, StringType, DictType, IntType, FloatType, UnionType, BooleanType
+from schematics.types import DictType, FloatType, IntType, StringType, URLType, UUIDType, UnionType
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
 
