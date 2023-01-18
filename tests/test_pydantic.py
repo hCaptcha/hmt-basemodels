@@ -30,7 +30,7 @@ SIMPLE = {
             {"dfe03e7c-f417-4726-8b14-ae033a3cc66e": {"score": 1}},
             {"dfe03e7c-f417-4726-8b12-ae033a3cc66a": {"score": 1}},
         ]
-    }
+    },
 }
 
 TASK = {
@@ -40,7 +40,7 @@ TASK = {
     "metadata": {
         "key_1": "value_1",
         "key_2": "value_2",
-    }
+    },
 }
 
 
@@ -62,7 +62,7 @@ class PydanticTest(TestCase):
         self.assertNotEqual(str(Manifest(**m1).job_id), str(Manifest(**m2).job_id))
 
     def test_taskdata(self):
-        """ Test taskdata """
+        """Test taskdata"""
         taskdata = deepcopy(TASK)
         TaskDataEntry(**taskdata)
 
@@ -83,6 +83,6 @@ class PydanticTest(TestCase):
         TaskDataEntry(**taskdata)
 
     def test_default_only_sign_results(self):
-        """ Test whether flat 'only_sign_results' is False by default. """
+        """Test whether flat 'only_sign_results' is False by default."""
         manifest = Manifest(**self.m)
         self.assertEqual(manifest.only_sign_results, False)

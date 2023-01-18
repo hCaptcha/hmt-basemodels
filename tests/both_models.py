@@ -139,9 +139,7 @@ def a_manifest(
     return manifest
 
 
-def a_nested_manifest(
-    request_type=IMAGE_LABEL_BINARY, minimum_trust=0.1, request_config=None
-) -> Any:
+def a_nested_manifest(request_type=IMAGE_LABEL_BINARY, minimum_trust=0.1, request_config=None) -> Any:
     model = {
         "requester_restricted_answer_set": {
             "0": {"en": "English Answer 1"},
@@ -164,6 +162,7 @@ def a_nested_manifest(
 
     return manifest
 
+
 TASK = {
     "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
     "datapoint_uri": "https://domain.com/file1.jpg",
@@ -172,7 +171,7 @@ TASK = {
     "metadata": {
         "key_1": "value_1",
         "key_2": "value_2",
-    }
+    },
 }
 
 
@@ -184,15 +183,13 @@ class ManifestTest(unittest.TestCase):
         a_manifest()
 
     def test_can_serialize(self):
-        """ validate that we can dump this to json in downstream services """
+        """validate that we can dump this to json in downstream services"""
         j = to_json(a_manifest())
 
     def test_can_fail_toconstruct(self):
         """Tests that the manifest raises an Error when called with falsy parameters."""
         a_manifest(-1)
-        self.assertRaises(
-            validation_data_errors[test_mode], a_manifest, "invalid amount"
-        )
+        self.assertRaises(validation_data_errors[test_mode], a_manifest, "invalid amount")
 
     def test_can_fail_toconstruct2(self):
         """Tests that validated fields can't be broken without an exception."""
@@ -214,9 +211,7 @@ class ManifestTest(unittest.TestCase):
             request_config={"shape_type": "point"},
         )
 
-        manifest = a_manifest(
-            request_type="multi_challenge", multi_challenge_manifests=[nested_manifest]
-        )
+        manifest = a_manifest(request_type="multi_challenge", multi_challenge_manifests=[nested_manifest])
 
     def test_can_make_nested_request_config_job_multiple_nest(self):
         """Test that jobs with multiple valid nested request_config parameters work"""
@@ -273,12 +268,10 @@ class ManifestTest(unittest.TestCase):
         else:
             func()
 
-        self.assertGreater(
-            len(manifest.to_primitive()["requester_restricted_answer_set"].keys()), 0
-        )
+        self.assertGreater(len(manifest.to_primitive()["requester_restricted_answer_set"].keys()), 0)
 
     def test_confcalc_configuration_id(self):
-        """ Test that key is in manifest """
+        """Test that key is in manifest"""
         manifest = a_manifest()
         manifest.confcalc_configuration_id = "test_conf_id"
         validate_func(manifest)()
@@ -286,7 +279,7 @@ class ManifestTest(unittest.TestCase):
         self.assertTrue("confcalc_configuration_id" in manifest.to_primitive())
 
     def test_url_or_list_for_example(self):
-        """ validates that we can supply a list or a url to example key """
+        """validates that we can supply a list or a url to example key"""
         model = a_manifest()
 
         model.requester_question_example = "https://test.com"
@@ -307,7 +300,7 @@ class ManifestTest(unittest.TestCase):
         self.assertTrue(validate_func(model))
 
     def test_restricted_audience(self):
-        """ Test that restricted audience is in the Manifest """
+        """Test that restricted audience is in the Manifest"""
         manifest = a_manifest()
 
         restricted_audience = {
@@ -315,7 +308,7 @@ class ManifestTest(unittest.TestCase):
             "confidence": [{"minimum_client_confidence": {"score": 0.9}}],
             "min_difficulty": 2,
         }
-        
+
         if test_mode == PYDANTIC:
             manifest.restricted_audience = PyRestrictedAudience(**restricted_audience)
         else:
@@ -323,42 +316,27 @@ class ManifestTest(unittest.TestCase):
 
         validate_func(manifest)()
         self.assertTrue("restricted_audience" in manifest.to_primitive())
-        self.assertTrue(
-            "minimum_client_confidence"
-            in manifest.to_primitive()["restricted_audience"]["confidence"][0]
-        )
+        self.assertTrue("minimum_client_confidence" in manifest.to_primitive()["restricted_audience"]["confidence"][0])
         self.assertEqual(
             0.9,
-            manifest.to_primitive()["restricted_audience"]["confidence"][0][
-                "minimum_client_confidence"
-            ]["score"],
+            manifest.to_primitive()["restricted_audience"]["confidence"][0]["minimum_client_confidence"]["score"],
         )
-        self.assertTrue(
-            "en-us" in manifest.to_primitive()["restricted_audience"]["lang"][0]
-        )
+        self.assertTrue("en-us" in manifest.to_primitive()["restricted_audience"]["lang"][0])
         self.assertEqual(
             0.9,
             manifest.to_primitive()["restricted_audience"]["lang"][0]["en-us"]["score"],
         )
-        self.assertEqual(
-            2, manifest.to_primitive()["restricted_audience"]["min_difficulty"]
-        )
+        self.assertEqual(2, manifest.to_primitive()["restricted_audience"]["min_difficulty"])
 
     def test_parse_restricted_audience(self):
-        """ Test None fields are skipped in restricted audience """
+        """Test None fields are skipped in restricted audience"""
         restricted_audience = {"min_difficulty": 2}
 
         if test_mode == SCHEMATICS:
-            self.assertEqual(
-                RestrictedAudience(restricted_audience).to_primitive(),
-                {"min_difficulty": 2})
+            self.assertEqual(RestrictedAudience(restricted_audience).to_primitive(), {"min_difficulty": 2})
         else:
-            self.assertEqual(
-                PyRestrictedAudience(**restricted_audience).dict(),
-                {"min_difficulty": 2})
-            self.assertEqual(
-                PyRestrictedAudience(**restricted_audience).json(),
-                '{"min_difficulty": 2}')
+            self.assertEqual(PyRestrictedAudience(**restricted_audience).dict(), {"min_difficulty": 2})
+            self.assertEqual(PyRestrictedAudience(**restricted_audience).json(), '{"min_difficulty": 2}')
 
     def test_restricted_audience_only(self):
         def assert_raises(data):
@@ -374,7 +352,7 @@ class ManifestTest(unittest.TestCase):
             {"lang": [{"US": {"score": 1}}]},
             {"lang": [{"US": "US"}]},
             {"lang": [{"us": {"nonsense": 1}}]},
-            {"lang": [{"us": {"score": -0.1}}]}
+            {"lang": [{"us": {"score": -0.1}}]},
         ]:
             assert_raises(data)
 
@@ -384,7 +362,7 @@ class ManifestTest(unittest.TestCase):
             {"country": [{"US": "US"}]},
             {"country": [{"us": {"nonsense": 1}}]},
             {"country": [{"us": {"score": -0.1}}]},
-            {"country": [{"us": {"score": -0.1}}]}
+            {"country": [{"us": {"score": -0.1}}]},
         ]:
             assert_raises(data)
 
@@ -393,7 +371,7 @@ class ManifestTest(unittest.TestCase):
             {"browser": [{"Desktop": {"score": 1}}]},
             {"browser": [{"desktop": "US"}]},
             {"browser": [{"desktop": {"nonsense": 1}}]},
-            {"browser": [{"desktop": {"score": -0.1}}]}
+            {"browser": [{"desktop": {"score": -0.1}}]},
         ]:
             assert_raises(data)
 
@@ -404,7 +382,7 @@ class ManifestTest(unittest.TestCase):
             {"sitekey": [{sitekey.upper(): {"score": 1}}]},
             {"sitekey": [{sitekey: 1}]},
             {"sitekey": [{sitekey: {"nonsense": 1}}]},
-            {"sitekey": [{sitekey: {"score": -0.1}}]}
+            {"sitekey": [{sitekey: {"score": -0.1}}]},
         ]:
             assert_raises(data)
 
@@ -412,7 +390,7 @@ class ManifestTest(unittest.TestCase):
             {"serverdomain": "serverdomain"},
             {"serverdomain": [{"serverdomain": 1}]},
             {"serverdomain": [{"serverdomain": {"nonsense": 1}}]},
-            {"serverdomain": [{"serverdomain": {"score": -0.1}}]}
+            {"serverdomain": [{"serverdomain": {"score": -0.1}}]},
         ]:
             assert_raises(data)
 
@@ -421,7 +399,7 @@ class ManifestTest(unittest.TestCase):
             {"confidence": [{"MINIMUM_client_confidence": {"score": 1}}]},
             {"confidence": [{"minimum_client_confidence": 1}]},
             {"confidence": [{"minimum_client_confidence": {"nonsense": 1}}]},
-            {"confidence": [{"minimum_client_confidence": {"score": -0.1}}]}
+            {"confidence": [{"minimum_client_confidence": {"score": -0.1}}]},
         ]:
             assert_raises(data)
 
@@ -429,7 +407,7 @@ class ManifestTest(unittest.TestCase):
             {"min_difficulty": "min_difficulty"},
             {"min_difficulty": -1},
             {"min_difficulty": 5},
-            {"min_difficulty": 1.1}
+            {"min_difficulty": 1.1},
         ]:
             assert_raises(data)
 
@@ -455,39 +433,25 @@ class ManifestTest(unittest.TestCase):
             assert_raises(data)
 
         data = {
-            "lang": [
-                {"us": {"score": 0}},
-                {"es": {"score": 0.5}},
-                {"en-us": {"score": 1}}
-            ],
-            "country": [
-                {"us": {"score": 0}},
-                {"es": {"score": 0.5}},
-                {"it": {"score": 1}}
-            ],
+            "lang": [{"us": {"score": 0}}, {"es": {"score": 0.5}}, {"en-us": {"score": 1}}],
+            "country": [{"us": {"score": 0}}, {"es": {"score": 0.5}}, {"it": {"score": 1}}],
             "browser": [
                 {"tablet": {"score": 0.5}},
                 {"desktop": {"score": 0}},
                 {"mobile": {"score": 1}},
                 {"modern_browser": {"score": 0.9}},
             ],
-            "sitekey": [
-                {str(uuid4()): {"score": 0.5}},
-                {str(uuid4()): {"score": 0}},
-                {str(uuid4()): {"score": 1}}
-            ],
+            "sitekey": [{str(uuid4()): {"score": 0.5}}, {str(uuid4()): {"score": 0}}, {str(uuid4()): {"score": 1}}],
             "serverdomain": [
                 {"1hcaptcha.com": {"score": 0.5}},
                 {"2hcaptcha.com": {"score": 0}},
-                {"3hcaptcha.com": {"score": 1}}
+                {"3hcaptcha.com": {"score": 1}},
             ],
-            "confidence": [
-                {"minimum_client_confidence": {"score": 0.5}}
-            ],
+            "confidence": [{"minimum_client_confidence": {"score": 0.5}}],
             "min_difficulty": 2,
             "min_user_score": 0,
             "max_user_score": 0.3,
-            "launch_group_id": 101
+            "launch_group_id": 101,
         }
 
         if test_mode == SCHEMATICS:
@@ -495,9 +459,8 @@ class ManifestTest(unittest.TestCase):
         else:
             PyRestrictedAudience(**data)
 
-
     def test_realistic_multi_challenge_example(self):
-        """ validates a realistic multi_challenge manifest """
+        """validates a realistic multi_challenge manifest"""
         obj = {
             "job_mode": "batch",
             "request_type": "image_label_area_select",
@@ -521,9 +484,7 @@ class ManifestTest(unittest.TestCase):
                 {
                     "request_type": "image_label_area_select",
                     "job_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
-                    "requester_question": {
-                        "en": "Please draw a bow around the text shown."
-                    },
+                    "requester_question": {"en": "Please draw a bow around the text shown."},
                     "request_config": {
                         "shape_type": "polygon",
                         "min_points": 1,
@@ -574,7 +535,7 @@ class ManifestTest(unittest.TestCase):
         self.assertTrue(validate_func(model)() is None)
 
     def test_webhook(self):
-        """ Test that webhook is correct """
+        """Test that webhook is correct"""
         webhook = {
             "webhook_id": "c26c2e6a-41ab-4218-b39e-6314b760c45c",
             "job_completed": ["http://servicename:4000/api/webhook"],
@@ -590,10 +551,10 @@ class ManifestTest(unittest.TestCase):
         self.assertTrue("webhook" in model.to_primitive())
 
     def test_invalid_example_images(self):
-        """ validate that only certain types of request_types can specify example images """
+        """validate that only certain types of request_types can specify example images"""
         manifest = a_manifest().to_primitive()
-        manifest['request_type'] = "image_label_multiple_choice"
-        manifest["requester_question_example"] = ['a']
+        manifest["request_type"] = "image_label_multiple_choice"
+        manifest["requester_question_example"] = ["a"]
 
         with self.assertRaises(validation_base_errors[test_mode]):
             validate_func(create_manifest(manifest))()
@@ -601,41 +562,35 @@ class ManifestTest(unittest.TestCase):
         del manifest["requester_question_example"]
         validate_func(create_manifest(manifest))()
 
-        manifest["requester_example_extra_fields"] = {
-            "answer_example_uri": FAKE_URL,
-            "answer_example_coords": "coords"
-        }
-        manifest['request_type'] = "image_label_area_select"
+        manifest["requester_example_extra_fields"] = {"answer_example_uri": FAKE_URL, "answer_example_coords": "coords"}
+        manifest["request_type"] = "image_label_area_select"
         validate_func(create_manifest(manifest))()
 
-        manifest["requester_example_extra_fields"] = [{
-            "answer_example_uri": FAKE_URL,
-            "answer_example_coords": "coords"
-        }]
+        manifest["requester_example_extra_fields"] = [
+            {"answer_example_uri": FAKE_URL, "answer_example_coords": "coords"}
+        ]
         validate_func(create_manifest(manifest))()
 
     def test_default_only_sign_results(self):
-        """ Test whether flag 'only_sign_results' is False by default. """
+        """Test whether flag 'only_sign_results' is False by default."""
         manifest = a_manifest()
         self.assertEqual(manifest.only_sign_results, False)
 
     def test_default_public_results(self):
-        """ Test whether flag 'public_results' is False by default. """
+        """Test whether flag 'public_results' is False by default."""
         manifest = a_manifest()
         self.assertEqual(manifest.public_results, False)
 
 
 class ViaTest(unittest.TestCase):
     def test_via_legacy_case(self):
-        """ tests case with inner class_attributes """
+        """tests case with inner class_attributes"""
         content = {
             "datapoints": [
                 {
                     "task_uri": "https://mydomain.com/image.jpg",
                     "metadata": {"filename": "image.jpg"},
-                    "class_attributes": {
-                        "0": {"class_attributes": {"dog": False, "cat": False}}
-                    },
+                    "class_attributes": {"0": {"class_attributes": {"dog": False, "cat": False}}},
                     "regions": [
                         {
                             "region_attributes": {"region_key": "region_value"},
@@ -659,7 +614,7 @@ class ViaTest(unittest.TestCase):
         self.assertEqual(parsed["version"], 1)
 
     def test_via_v1_case(self):
-        """ tests case where we dont use the inner class_attributes """
+        """tests case where we dont use the inner class_attributes"""
         content = {
             "datapoints": [
                 {
@@ -690,9 +645,6 @@ class ViaTest(unittest.TestCase):
         self.assertIn("dog", parsed["datapoints"][0]["class_attributes"])
 
 
-
-
-
 @httpretty.activate
 class TestValidateManifestUris(unittest.TestCase):
     def register_http_response(
@@ -715,14 +667,14 @@ class TestValidateManifestUris(unittest.TestCase):
         test_models.validate_manifest_uris(manifest)
 
     def test_no_uris(self):
-        """ should not raise if there are no uris to validate """
+        """should not raise if there are no uris to validate"""
         manifest = {}
         test_models.validate_manifest_uris(manifest)
 
     def test_groundtruth_uri_ilb_valid(self):
         groundtruth_uri = "https://domain.com/123/file1.jpeg"
         body = {
-            groundtruth_uri : ["false", "false", "false"],
+            groundtruth_uri: ["false", "false", "false"],
             "https://domain.com/456/file2.jpeg": ["false", "true", "false"],
         }
 
@@ -736,7 +688,7 @@ class TestValidateManifestUris(unittest.TestCase):
             self.validate_groundtruth_response("image_label_binary", body)
 
     def test_groundtruth_uri_ilb_invalid_format(self):
-        """ should raise if groundtruth_uri contains array instead of object """
+        """should raise if groundtruth_uri contains array instead of object"""
         body = [{"key": "value"}]
 
         with self.assertRaises(validation_base_errors[test_mode]):
@@ -806,7 +758,7 @@ class TestValidateManifestUris(unittest.TestCase):
             self.validate_groundtruth_response("image_label_area_select", body)
 
     def test_taskdata_empty(self):
-        """ should raise if taskdata_uri contains no entries """
+        """should raise if taskdata_uri contains no entries"""
         uri = "https://uri.com"
         manifest = {"taskdata_uri": uri}
         body = []
@@ -817,7 +769,7 @@ class TestValidateManifestUris(unittest.TestCase):
             test_models.validate_manifest_uris(manifest)
 
     def test_taskdata_invalid_format(self):
-        """ should raise if taskdata_uri contains object instead of array """
+        """should raise if taskdata_uri contains object instead of array"""
         uri = "https://uri.com"
         manifest = {"taskdata_uri": uri}
         body = {"key": [1, 2, 3]}
@@ -885,14 +837,16 @@ class TestValidateManifestUris(unittest.TestCase):
         }
 
         self.register_http_response(datapoint_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
-        self.register_http_response(groundtruth_image_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
+        self.register_http_response(
+            groundtruth_image_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"}
+        )
         self.register_http_response(taskdata_uri, manifest, taskdata)
         self.register_http_response(groundtruth_uri, manifest, groundtruth)
 
         test_models.validate_manifest_uris(manifest)
 
     def test_mitl_in_internal_config(self):
-        """ Test that mitl config can be part of the internal configuration """
+        """Test that mitl config can be part of the internal configuration"""
         model = a_manifest().to_primitive()
         mitl_config = {
             "n_gt": 200,
@@ -937,19 +891,19 @@ class TaskEntryTest(unittest.TestCase):
         taskdata.pop("metadata")
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 
-        taskdata['datapoint_text'] = {"en": "Question to test with"}
+        taskdata["datapoint_text"] = {"en": "Question to test with"}
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 
         with self.assertRaises(schematics.exceptions.DataError):
-            taskdata['datapoint_text'] = {}
-            taskdata['datapoint_uri'] = ""
+            taskdata["datapoint_text"] = {}
+            taskdata["datapoint_uri"] = ""
             invalid = TaskDataEntry(taskdata).validate()
 
         with self.assertRaises(schematics.exceptions.DataError):
-            taskdata['datapoint_uri'] = "http://com"
+            taskdata["datapoint_uri"] = "http://com"
             invalid = TaskDataEntry(taskdata).validate()
 
-        taskdata['datapoint_uri'] = "https://domain.com/file1.jpg"
+        taskdata["datapoint_uri"] = "https://domain.com/file1.jpg"
         self.assertIsNone(TaskDataEntry(taskdata).validate())
 
 

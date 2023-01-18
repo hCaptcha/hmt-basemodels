@@ -3,6 +3,7 @@ import unittest
 from pydantic.error_wrappers import ValidationError
 from basemodels.pydantic import Preprocess, Pipeline
 
+
 class PipelineTest(unittest.TestCase):
     def test_preprocess(self):
         config = {}
@@ -15,7 +16,6 @@ class PipelineTest(unittest.TestCase):
 
         self.assertIsNone(p.config)
 
-
     def test_preprocess_raise(self):
         with self.assertRaises(ValidationError):
             Preprocess()
@@ -26,16 +26,12 @@ class PipelineTest(unittest.TestCase):
         with self.assertRaises(ValidationError):
             Preprocess(pipeline=Pipeline.FaceBlurPipeline, config=1)
 
-
     def test_preprocess_to_dict(self):
-        config = { "radius": 3 }
+        config = {"radius": 3}
         p = Preprocess(pipeline=Pipeline.FaceBlurPipeline, config=config)
 
-        self.assertEqual(p.to_dict(), { "pipeline": Pipeline.FaceBlurPipeline.value, "config": config })
+        self.assertEqual(p.to_dict(), {"pipeline": Pipeline.FaceBlurPipeline.value, "config": config})
 
         p = Preprocess(pipeline=Pipeline.FaceBlurPipeline)
 
-        self.assertEqual(p.to_dict(), { "pipeline": Pipeline.FaceBlurPipeline.value })
-
-
-
+        self.assertEqual(p.to_dict(), {"pipeline": Pipeline.FaceBlurPipeline.value})

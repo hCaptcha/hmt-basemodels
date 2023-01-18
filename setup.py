@@ -9,10 +9,10 @@ setuptools.setup(
     include_package_data=True,
     zip_safe=True,
     classifiers=[
-        "Intended Audience :: Developers", "Operating System :: OS Independent",
-        "Programming Language :: Python"
+        "Intended Audience :: Developers",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
     ],
     packages=setuptools.find_packages(),
-    install_requires=[
-        "schematics>=2", "marshmallow>=3", "requests>=2", "typing-extensions", "pydantic>=1.6"
-    ])
+    install_requires=["schematics>=2", "marshmallow>=3", "requests>=2", "typing-extensions", "pydantic>=1.6"],
+)

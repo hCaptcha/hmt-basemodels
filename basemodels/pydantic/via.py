@@ -54,6 +54,7 @@ class DatapointBaseModel(BaseModel):
 
 
 class ViaDataManifest(BaseModel):
-    """ Main entrypoint to define the VIA Data Format """
+    """Main entrypoint to define the VIA Data Format"""
+
     datapoints: List[DatapointBaseModel]
     version: int = 1

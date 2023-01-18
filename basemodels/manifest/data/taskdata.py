@@ -25,17 +25,12 @@ class TaskDataEntry(Model):
       }
     ]
     """
+
     task_key = UUIDType()
     datapoint_uri = URLType()
     datapoint_text = DictType(StringType)
     datapoint_hash = StringType()
-    metadata = DictType(
-      UnionType([
-        StringType(required=False, max_length=256),
-        FloatType,
-        IntType
-      ]),
-    required=False)
+    metadata = DictType(UnionType([StringType(required=False, max_length=256), FloatType, IntType]), required=False)
 
     def validate_metadata(self, data, value):
         if len(str(value)) > 1024:
@@ -48,15 +43,15 @@ class TaskDataEntry(Model):
 
         Raise error if no datapoint_text and no value for URI or if length of URI less than 10.
         """
-        if not value and not data.get('datapoint_text'):
+        if not value and not data.get("datapoint_text"):
             raise ValidationError("datapoint_uri is missing.")
-        if value and len(value) < 10 and not data.get('datapoint_text'):
+        if value and len(value) < 10 and not data.get("datapoint_text"):
             raise ValidationError("datapoint_uri length is less than 10")
         return value
 
 
 def validate_content_type(uri: str) -> None:
-    """ Validate uri content type """
+    """Validate uri content type"""
     try:
         response = requests.head(uri)
         response.raise_for_status()
@@ -69,11 +64,11 @@ def validate_content_type(uri: str) -> None:
 
 
 def validate_taskdata_entry(value: dict, validate_image_content_type: bool) -> None:
-    """ Validate taskdata entry """
+    """Validate taskdata entry"""
     if not isinstance(value, dict):
         raise ValidationError("taskdata entry should be dict")
 
     TaskDataEntry(value).validate()
 
     if validate_image_content_type:
-        validate_content_type(value['datapoint_uri'])
+        validate_content_type(value["datapoint_uri"])

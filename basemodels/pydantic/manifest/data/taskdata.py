@@ -30,6 +30,7 @@ class TaskDataEntry(BaseModel):
       }
     ]
     """
+
     task_key: Optional[UUID]
     datapoint_uri: HttpUrl
 
@@ -52,11 +53,11 @@ class TaskDataEntry(BaseModel):
         return value
 
     datapoint_hash: Optional[str]
-    metadata: Optional[Dict[str,Optional[Union[str,int,float]]]]
+    metadata: Optional[Dict[str, Optional[Union[str, int, float]]]]
 
 
 def validate_content_type(uri: str) -> None:
-    """ Validate uri content type """
+    """Validate uri content type"""
     try:
         response = requests.head(uri)
         response.raise_for_status()
@@ -72,13 +73,13 @@ def validate_content_type(uri: str) -> None:
 
 
 def validate_taskdata_entry(value: dict, validate_image_content_type: bool) -> None:
-    """ Validate taskdata entry """
+    """Validate taskdata entry"""
     if not isinstance(value, dict):
         raise ValidationError("taskdata entry should be dict", TaskDataEntry())
 
     *_, validation_error = validate_model(TaskDataEntry, value)
     if validation_error:
-          raise validation_error
+        raise validation_error
 
     if validate_image_content_type:
-        validate_content_type(value['datapoint_uri'])
+        validate_content_type(value["datapoint_uri"])
