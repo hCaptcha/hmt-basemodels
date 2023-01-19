@@ -11,7 +11,6 @@ JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION = [
     "image_label_text",
 ]
 
-
 SUPPORTED_CONTENT_TYPES = [
     "image/jpeg",
     "image/jpg",

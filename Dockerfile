@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM python:3.9.16-slim-bullseye
 
 WORKDIR /work
 RUN apt-get update -y && \
@@ -8,7 +8,7 @@ RUN apt-get update -y && \
 
 ENV LANG C.UTF-8
 
-RUN pip3 install poetry
+RUN pip install poetry
 
 COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false && poetry install -n --no-root

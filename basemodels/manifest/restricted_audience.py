@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from schematics.models import Model, ValidationError
-from schematics.types import BaseType, ListType, StringType, DictType, IntType, FloatType
+from schematics.types import BaseType, DictType, FloatType, IntType, ListType
 
 
 class ScoreType(BaseType):
@@ -21,7 +21,7 @@ class ScoreType(BaseType):
 
         if not isinstance(score, (float, int)):
             raise ValidationError("invalid score value type")
-        
+
         if score > 1 or score < 0:
             raise ValidationError("invalid score value")
 
@@ -34,6 +34,7 @@ class RestrictedAudience(Model):
     serverdomain = ListType(DictType(ScoreType), required=False)
     confidence = ListType(DictType(ScoreType), required=False)
     reason = ListType(DictType(ScoreType), required=False)
+    roles = ListType(DictType(ScoreType), required=False)
 
     min_difficulty = IntType(required=False, min_value=0, max_value=4)
     min_user_score = FloatType(required=False, min_value=0, max_value=1)
@@ -42,7 +43,7 @@ class RestrictedAudience(Model):
     launch_group_id = IntType(required=False, min_value=0)
 
     class Options:
-        serialize_when_none=False
+        serialize_when_none = False
 
     def keys_iterator(self, value):
         if isinstance(value, list):

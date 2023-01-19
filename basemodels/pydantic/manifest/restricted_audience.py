@@ -10,6 +10,7 @@ class RestrictedAudienceBrowserEnum(str, Enum):
     desktop = "desktop"
     modern_browser = "modern_browser"
 
+
 class RestrictedAudienceConfidenceEnum(str, Enum):
     minimum_client_confidence = "minimum_client_confidence"
 
@@ -19,13 +20,14 @@ class RestrictedAudienceScore(BaseModel):
 
 
 class RestrictedAudience(BaseModel):
-    lang: Optional[List[Dict[str,RestrictedAudienceScore]]]
-    country: Optional[List[Dict[str,RestrictedAudienceScore]]]
-    sitekey: Optional[List[Dict[str,RestrictedAudienceScore]]]
-    serverdomain: Optional[List[Dict[str,RestrictedAudienceScore]]]
-    browser: Optional[List[Dict[RestrictedAudienceBrowserEnum,RestrictedAudienceScore]]]
-    confidence: Optional[List[Dict[RestrictedAudienceConfidenceEnum,RestrictedAudienceScore]]]
-    reason: Optional[List[Dict[str,RestrictedAudienceScore]]]
+    lang: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    country: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    sitekey: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    serverdomain: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    browser: Optional[List[Dict[RestrictedAudienceBrowserEnum, RestrictedAudienceScore]]]
+    confidence: Optional[List[Dict[RestrictedAudienceConfidenceEnum, RestrictedAudienceScore]]]
+    reason: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    roles: Optional[List[Dict[str, RestrictedAudienceScore]]]
 
     min_difficulty: Optional[conint(ge=0, le=4, strict=True)]
     min_user_score: Optional[confloat(ge=0, le=1)]

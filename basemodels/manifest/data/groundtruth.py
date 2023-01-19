@@ -78,12 +78,12 @@ ILASGroundtruthEntryModel = create_wrapper_model(ilas_groundtruth_entry_type)
 groundtruth_entry_models_map = {
     "image_label_binary": ILBGroundtruthEntryModel,
     "image_label_multiple_choice": ILMCGroundtruthEntryModel,
-    "image_label_area_select": ILASGroundtruthEntryModel
+    "image_label_area_select": ILASGroundtruthEntryModel,
 }
 
 
 def validate_content_type(uri: str) -> None:
-    """ Validate uri content type """
+    """Validate uri content type"""
     try:
         response = requests.head(uri)
         response.raise_for_status()
@@ -101,7 +101,7 @@ def validate_groundtruth_entry(
     request_type: str,
     validate_image_content_type: bool,
 ):
-    """ Validate key & value of groundtruth entry based on request_type """
+    """Validate key & value of groundtruth entry based on request_type"""
     GroundtruthEntryValueModel = groundtruth_entry_models_map.get(request_type)
 
     if GroundtruthEntryValueModel is None:
