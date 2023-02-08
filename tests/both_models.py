@@ -434,6 +434,13 @@ class ManifestTest(unittest.TestCase):
         ]:
             assert_raises(data)
 
+        for data in [
+                {"interests": 1}, 
+                {"interests": {"mapped": 1}},
+                {"interests": ["as", "string"]}
+        ]:
+            assert_raises(data)
+
         data = {
             "lang": [{"us": {"score": 0}}, {"es": {"score": 0.5}}, {"en-us": {"score": 1}}],
             "country": [{"us": {"score": 0}}, {"es": {"score": 0.5}}, {"it": {"score": 1}}],
@@ -454,6 +461,7 @@ class ManifestTest(unittest.TestCase):
             "min_user_score": 0,
             "max_user_score": 0.3,
             "launch_group_id": 101,
+            "interests": [1,2,3,4],
         }
 
         if test_mode == SCHEMATICS:

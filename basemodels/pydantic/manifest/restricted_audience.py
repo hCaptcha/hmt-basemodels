@@ -34,6 +34,7 @@ class RestrictedAudience(BaseModel):
     max_user_score: Optional[confloat(ge=0, le=1)]
 
     launch_group_id: Optional[conint(ge=0, strict=True)]
+    interests: Optional[List[conint(strict=True)]]
 
     def dict(self, **kwargs):
         kwargs["exclude_unset"] = True
