@@ -98,6 +98,7 @@ def a_manifest(
     request_config=None,
     job_mode="batch",
     multi_challenge_manifests=None,
+    is_verification=None,
 ) -> Any:
     internal_config = {"exchange": {"a": 1, "b": "c"}}
     model = {
@@ -131,6 +132,9 @@ def a_manifest(
 
     if request_config:
         model.update({"request_config": request_config})
+
+    if is_verification is not None:
+        model.update({"is_verification": is_verification})
 
     manifest = create_manifest(model)
     validate_func(manifest)()
@@ -578,6 +582,22 @@ class ManifestTest(unittest.TestCase):
         """Test whether flag 'public_results' is False by default."""
         manifest = a_manifest()
         self.assertEqual(manifest.public_results, False)
+
+    def test_is_verification_value(self):
+        # Given/When not passed - backward compatibility
+        manifest = a_manifest()
+        # Then False
+        self.assertFalse(manifest.is_verification)
+
+        # Given/When pass False
+        manifest = a_manifest(is_verification=False)
+        # Then False
+        self.assertFalse(manifest.is_verification)
+
+        # Given/When pass True
+        manifest = a_manifest(is_verification=True)
+        # Then False
+        self.assertTrue(manifest.is_verification)
 
 
 class ViaTest(unittest.TestCase):

@@ -279,6 +279,8 @@ class Manifest(Model):
     rejected_uri: Optional[AnyHttpUrl]
     rejected_count: Optional[int]
 
+    is_verification: bool = False
+
     ##### Validators
 
     @validator("requester_min_repeats")
