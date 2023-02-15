@@ -300,6 +300,8 @@ class Manifest(Model):
 
     restricted_audience = ModelType(RestrictedAudience, required=True, default={})
 
+    is_verification = BooleanType(default=False, required=False)
+
     def validate_taskdata_uri(self, data, value):
         if data.get("taskdata") and len(data.get("taskdata")) > 0 and data.get("taskdata_uri"):
             raise ValidationError(
