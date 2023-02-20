@@ -41,6 +41,7 @@ class RestrictedAudience(Model):
     max_user_score = FloatType(required=False, min_value=0, max_value=1)
 
     launch_group_id = IntType(required=False, min_value=0)
+    interests = ListType(IntType, required=False) 
 
     class Options:
         serialize_when_none = False
