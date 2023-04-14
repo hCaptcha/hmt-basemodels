@@ -112,15 +112,16 @@ class RequestConfig(Model):
     max_length = IntType()
     min_length = IntType()
     sig_figs = IntType()
+    keep_answers_order = BooleanType(default=False)
 
 
 class InternalConfig(Model):
     """discarded from incoming manifests"""
 
-    exchange = DictType(StringType, UnionType([StringType, IntType, FloatType]))
-    reco = DictType(StringType, UnionType([StringType, IntType, FloatType]))
-    repo = DictType(StringType, UnionType([StringType, IntType, FloatType]))
-    other = DictType(StringType, UnionType([StringType, IntType, FloatType]))
+    exchange = DictType(UnionType([StringType, IntType, FloatType]))
+    reco = DictType(UnionType([StringType, IntType, FloatType]))
+    repo = DictType(UnionType([StringType, IntType, FloatType]))
+    other = DictType(UnionType([StringType, IntType, FloatType]))
     # Accept one layer of nested
     mitl = DictType(
         UnionType(

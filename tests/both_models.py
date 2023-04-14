@@ -435,7 +435,7 @@ class ManifestTest(unittest.TestCase):
             assert_raises(data)
 
         for data in [
-                {"interests": 1}, 
+                {"interests": 1},
                 {"interests": {"mapped": 1}},
                 {"interests": ["as", "string"]}
         ]:
@@ -501,6 +501,7 @@ class ManifestTest(unittest.TestCase):
                         "max_points": 4,
                         "min_shapes_per_image": 1,
                         "max_shapes_per_image": 4,
+                        "keep_answers_order": True,
                     },
                 },
                 {
