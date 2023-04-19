@@ -124,6 +124,7 @@ class RequestConfig(Model):
     multiple_choice_max_choices: Optional[int] = 1
     multiple_choice_min_choices: Optional[int] = 1
     overlap_threshold: Optional[float]
+    keep_answers_order: Optional[bool]
 
 
 class InternalConfig(Model):
