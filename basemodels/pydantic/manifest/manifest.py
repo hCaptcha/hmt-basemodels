@@ -165,6 +165,9 @@ class NestedManifest(Model):
             if not value or len(value.keys()) == 0:
                 value = {"label": {}}
                 values["requester_restricted_answer_set"] = value
+        if values["request_type"] == BaseJobTypesEnum.image_label_multiple_choice:
+            if not value or len(value.keys()) <= 1:
+                raise ValidationError("image_label_multiple_choice needs at least two RAS sets")
         return value
 
     requester_description: Optional[str]
