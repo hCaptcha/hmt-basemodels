@@ -3,6 +3,9 @@ import unittest
 import basemodels.pydantic as pydantic_basemodels
 import basemodels
 
+from pydantic import ValidationError
+from schematics.exceptions import DataError
+
 MANIFEST_VALUES = {
     "job_mode": "batch",
     "request_type": "image_label_multiple_choice",
@@ -49,6 +52,15 @@ def validate_manifest_from_test_method(test_method, manifest):
         raise NotImplementedError(f"Test method {test_method} not implemented.")
 
 
+def get_exception_type_from_test_method(test_method):
+    if test_method == "schematics":
+        return DataError
+    elif test_method == "pydantic":
+        return ValidationError
+    else:
+        raise NotImplementedError(f"Test method {test_method} not implemented.")
+
+
 class TestILMCRequesterRestrictedAnswerSet(unittest.TestCase):
     """
     Tests that the restricted answer set is properly validated for ILMC challenges
@@ -60,7 +72,7 @@ class TestILMCRequesterRestrictedAnswerSet(unittest.TestCase):
         if should_pass:
             validate_manifest_from_test_method(test_method, m)
         else:
-            with self.assertRaises(Exception):
+            with self.assertRaises(get_exception_type_from_test_method(test_method)):
                 validate_manifest_from_test_method(test_method, m)
 
     def test_schematics_one_option(self):
