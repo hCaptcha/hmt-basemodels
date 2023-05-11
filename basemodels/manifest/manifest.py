@@ -153,6 +153,16 @@ class NestedManifest(Model):
             if not value or len(value.keys()) == 0:
                 value = {"label": {}}
                 data["requester_restricted_answer_set"] = value
+
+        if data["request_type"] == "image_label_multiple_choice":
+            if not value or len(value.keys()) <= 1:
+                raise ValidationError(
+                    "image_label_multiple_choice needs at least 2+ options in requester_restricted_answer_set"
+                )
+            elif len(value.keys()) > 4:
+                raise ValidationError(
+                    "image_label_multiple_choice can not handle more than 4 options requester_restricted_answer_set"
+                )
         return value
 
     requester_description = StringType()
@@ -225,6 +235,16 @@ class Manifest(Model):
             if not value or len(value.keys()) == 0:
                 value = {"label": {}}
                 data["requester_restricted_answer_set"] = value
+
+        if data["request_type"] == "image_label_multiple_choice":
+            if not value or len(value.keys()) <= 1:
+                raise ValidationError(
+                    "image_label_multiple_choice needs at least 2+ options in requester_restricted_answer_set"
+                )
+            elif len(value.keys()) > 4:
+                raise ValidationError(
+                    "image_label_multiple_choice can not handle more than 4 options requester_restricted_answer_set"
+                )
         return value
 
     requester_description = StringType()

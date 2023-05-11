@@ -14,7 +14,7 @@ SIMPLE = {
     "requester_max_repeats": 7,
     "requester_min_repeats": 3,
     "requester_question": {"en": "deploy to only certain sites"},
-    "requester_restricted_answer_set": {"one": {"en": "one"}},
+    "requester_restricted_answer_set": {"one": {"en": "one"}, "two": {"en": "two"}},
     "task_bid_price": -1,
     "unsafe_content": False,
     "oracle_stake": 0.05,
