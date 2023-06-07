@@ -20,6 +20,8 @@ from schematics.types import (
 
 from basemodels.manifest.data.groundtruth import validate_groundtruth_entry
 from basemodels.manifest.data.taskdata import validate_taskdata_entry
+from basemodels.manifest.data.requester_question_example import validate_requester_example_image
+from basemodels.manifest.data.requester_restricted_answer_set import validate_requester_restricted_answer_set_uris
 from basemodels.manifest.restricted_audience import RestrictedAudience
 from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
 
@@ -390,3 +392,12 @@ def validate_manifest_uris(manifest: dict):
 
         if entries_count == 0:
             raise ValidationError(f"fetched {uri_key} is empty")
+
+
+def validate_manifest_example_images(manifest: dict):
+    """Fetch and validate the example resources."""
+    # TODO: Q; should I do this with the validate_manifest_uris or I should do it separately like this
+    question_example = manifest.get("requester_question_example")
+    req_res_answer_set = manifest.get("requester_restricted_answer_set")
+    validate_requester_example_image(question_example)
+    validate_requester_restricted_answer_set_uris(req_res_answer_set)
