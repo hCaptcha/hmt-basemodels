@@ -424,7 +424,7 @@ def validate_taskdata_uri(manifest: dict):
 def validate_manifest_example_images(manifest: dict):
     """Fetch and validate the example resources."""
     question_example = manifest.get("requester_question_example")
-    req_res_answer_set = manifest.get("requester_restricted_answer_set")
+    req_res_answer_set = manifest.get("requester_restricted_answer_set", {})
     validate_requester_example_image(question_example)
     validate_requester_restricted_answer_set_uris(req_res_answer_set)
 
