@@ -13,11 +13,19 @@ def validate_requester_example_image(
         if isinstance(value, str):
             uri_val = value
             validate_content_type(value)
-        else:
+        elif isinstance(value, list):
             for uri in value:
                 uri_val = uri
                 validate_content_type(uri)
+        else:
+            raise ValidationError(f"Not supported format for requester_example_image.")
     except RequestException as e:
-        raise ValidationError(f"requester example image content type ({uri_val}) validation failed", ExampleResourceModel) from e
+        raise ValidationError(
+            f"requester example image content type ({uri_val}) validation failed",
+            ExampleResourceModel
+        ) from e
     except ValidationError as e:
-        raise ValidationError(f"requester example image for {uri_val} has unsupported type", ExampleResourceModel) from e
+        raise ValidationError(
+            f"requester example image for {uri_val} has unsupported type",
+            ExampleResourceModel
+        ) from e

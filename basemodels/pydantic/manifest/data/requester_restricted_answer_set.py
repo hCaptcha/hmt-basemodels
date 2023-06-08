@@ -22,6 +22,12 @@ def validate_requester_restricted_answer_set_uris(restricted_answer_set: dict) -
         try:
             validate_content_type(uri)
         except RequestException as e:
-            raise ValidationError(f"requester example image content type ({uri}) validation failed", ExampleResourceModel) from e
+            raise ValidationError(
+                f"requester restricted answer set example uri image content type ({uri}) failed validation",
+                ExampleResourceModel
+            ) from e
         except ValidationError as e:
-            raise ValidationError(f"requester example image for {uri} has unsupported type", ExampleResourceModel) from e
+            raise ValidationError(
+                f"requester restricted answer set example uri image content type ({uri}) failed validation",
+                ExampleResourceModel
+            ) from e
