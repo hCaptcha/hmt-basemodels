@@ -23,7 +23,7 @@ def validate_requester_restricted_answer_set_uris(restricted_answer_set: dict) -
             validate_content_type(uri)
         except RequestException as e:
             raise ValidationError(
-                f"requester restricted answer set example uri ({uri}) content type failed validation",
+                f"could not retrieve requester restricted answer set example uri ({uri})",
                 ExampleResourceModel
             ) from e
         except ValidationError as e:

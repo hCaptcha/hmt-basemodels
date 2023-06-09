@@ -21,7 +21,7 @@ def validate_requester_example_image(
             raise ValidationError(f"Not supported format for requester_question_example.")
     except RequestException as e:
         raise ValidationError(
-            f"requester example image content type ({uri_val}) validation failed",
+            f"could not retrieve requester example ({uri_val})",
             ExampleResourceModel
         ) from e
     except ValidationError as e:
