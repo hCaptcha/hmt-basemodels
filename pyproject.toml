@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hmt-basemodels"
-version = "0.1.29"
+version = "0.1.30"
 description = ""
 authors = ["Intuition Machines, Inc <support@hcaptcha.com>"]
 packages = [
