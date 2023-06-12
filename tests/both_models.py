@@ -896,6 +896,56 @@ class TestValidateManifestUris(unittest.TestCase):
         validate_func(manifest)()
         self.assertTrue(True)
 
+    def test_example_images_resources_valid(self):
+        """Test example images resources are valid."""
+        first_uri = "http://test.com/example-image1.jpg"
+        second_uri = "http://test.com/example-image2.jpg"
+        third_uri = "http://test.com/example-image3.jpg"
+
+        manifest = {
+            "requester_question_example": first_uri,
+            "requester_restricted_answer_set": {
+                "0": {
+                    "answer_example_uri": second_uri,
+                    "en": "Test en2"
+                },
+                "1": {
+                    "answer_example_uri": third_uri,
+                    "en": "Test en3"
+                },
+            }
+        }
+        self.register_http_response(first_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
+        self.register_http_response(second_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
+        self.register_http_response(third_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
+
+        test_models.validate_manifest_example_images(manifest)
+
+    def test_example_images_resources_invalid(self):
+        """Test example images resources are invalid."""
+        first_uri = "http://test.com/example-image1.jpg"
+        second_uri = "http://test.com/example-image2.jpg"
+        third_uri = "http://test.com/example-image3.jpg"
+
+        manifest = {
+            "requester_question_example": first_uri,
+            "requester_restricted_answer_set": {
+                "0": {
+                    "answer_example_uri": second_uri,
+                    "en": "Test en2"
+                },
+                "1": {
+                    "answer_example_uri": third_uri,
+                    "en": "Test en3"
+                },
+            }
+        }
+        self.register_http_response(first_uri, method=httpretty.HEAD, headers={"Content-Type": "image/html"})
+        self.register_http_response(second_uri, method=httpretty.HEAD, headers={"Content-Type": "image/html"})
+        self.register_http_response(third_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
+        with self.assertRaises(validation_base_errors[test_mode]):
+            test_models.validate_manifest_example_images(manifest)
+
 
 class TaskEntryTest(unittest.TestCase):
     def test_valid_entry_is_true(self):

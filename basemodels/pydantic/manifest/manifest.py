@@ -6,6 +6,8 @@ from typing import Dict, Union, List, Optional
 from enum import Enum
 from uuid import UUID, uuid4
 from .data.groundtruth import validate_groundtruth_entry
+from .data.requester_question_example import validate_requester_example_image
+from .data.requester_restricted_answer_set import validate_requester_restricted_answer_set_uris
 from .data.taskdata import validate_taskdata_entry
 from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl
 from pydantic.fields import Field
@@ -417,6 +419,14 @@ def validate_taskdata_uri(manifest: dict):
 
     if entries_count == 0:
         raise ValidationError(f"fetched {uri_key} is empty", Manifest)
+
+
+def validate_manifest_example_images(manifest: dict):
+    """Fetch and validate the example resources."""
+    question_example = manifest.get("requester_question_example")
+    req_res_answer_set = manifest.get("requester_restricted_answer_set", {})
+    validate_requester_example_image(question_example)
+    validate_requester_restricted_answer_set_uris(req_res_answer_set)
 
 
 def validate_manifest_uris(manifest: dict):
