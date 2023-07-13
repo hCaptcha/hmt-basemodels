@@ -173,6 +173,9 @@ TASK = {
     "metadata": {
         "key_1": "value_1",
         "key_2": "value_2",
+        "key_3": {
+            "inner_key_1": "inner_value_1",
+        }
     },
 }
 
