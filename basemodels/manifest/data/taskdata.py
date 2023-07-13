@@ -30,7 +30,12 @@ class TaskDataEntry(Model):
     datapoint_uri = URLType()
     datapoint_text = DictType(StringType)
     datapoint_hash = StringType()
-    metadata = DictType(UnionType([StringType(required=False, max_length=256), FloatType, IntType]), required=False)
+    metadata = DictType(
+        UnionType(
+            [StringType(required=False, max_length=256), FloatType, IntType, DictType(StringType)]
+        ),
+        required=False
+    )
 
     def validate_metadata(self, data, value):
         if len(str(value)) > 1024:
