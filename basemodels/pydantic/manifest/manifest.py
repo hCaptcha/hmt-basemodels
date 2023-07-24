@@ -1,3 +1,4 @@
+import json
 import uuid
 import requests
 from requests.exceptions import RequestException
@@ -355,6 +356,12 @@ class Manifest(Model):
 
     class Config:
         arbitrary_types_allowed = True
+
+    def to_primitive(self):
+        """Override primitive function"""
+        manifest_json = self.json()
+        return json.loads(manifest_json)
+
 
 
 def validate_groundtruth_uri(manifest: dict):
