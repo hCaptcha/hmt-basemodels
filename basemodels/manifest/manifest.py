@@ -118,7 +118,6 @@ class RequestConfig(Model):
     ignore_case = BooleanType(default=False)
 
 
-
 class InternalConfig(Model):
     """discarded from incoming manifests"""
 
