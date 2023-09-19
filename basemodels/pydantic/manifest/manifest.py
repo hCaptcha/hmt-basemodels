@@ -127,7 +127,6 @@ class RequestConfig(Model):
     multiple_choice_min_choices: Optional[int] = 1
     overlap_threshold: Optional[float]
     answer_type: Optional[str] = "str"
-    ignore_case: Optional[bool]
     max_value: Optional[float]
     min_value: Optional[float]
     max_length: Optional[int]
