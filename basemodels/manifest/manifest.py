@@ -109,12 +109,15 @@ class RequestConfig(Model):
     multiple_choice_min_choices = IntType(default=1)
     overlap_threshold = FloatType(required=False)
     answer_type = StringType(choices=["int", "float", "str"], default="str")
+    ignore_case = BooleanType()
     max_value = FloatType()
     min_value = FloatType()
     max_length = IntType()
     min_length = IntType()
     sig_figs = IntType()
     keep_answers_order = BooleanType(default=False)
+    ignore_case = BooleanType(default=False)
+
 
 
 class InternalConfig(Model):
