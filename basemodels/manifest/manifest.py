@@ -115,6 +115,7 @@ class RequestConfig(Model):
     min_length = IntType()
     sig_figs = IntType()
     keep_answers_order = BooleanType(default=False)
+    ignore_case = BooleanType(default=False)
 
 
 class InternalConfig(Model):
