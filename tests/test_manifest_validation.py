@@ -4,21 +4,17 @@ from pydantic import ValidationError
 from typing import Any
 
 import logging
-import schematics
 import basemodels
 from uuid import uuid4
 from copy import deepcopy
 
 from basemodels.manifest.data.taskdata import TaskDataEntry
 
-# New pydantic model
-import basemodels.pydantic as pydantic_basemodels
 import unittest
 import httpretty
 import json
 
 from basemodels.manifest.restricted_audience import RestrictedAudience
-from basemodels.pydantic.manifest.restricted_audience import RestrictedAudience as PyRestrictedAudience
 
 CALLBACK_URL = "http://google.com/webback"
 FAKE_URL = "http://google.com/fake"
@@ -28,49 +24,24 @@ REP_ORACLE = "0x61F9F0B31eacB420553da8BCC59DC617279731Ac"
 REC_ORACLE = "0xD979105297fB0eee83F7433fC09279cb5B94fFC6"
 FAKE_ORACLE = "0x1413862c2b7054cdbfdc181b83962cb0fc11fd92"
 
-# Test both version of models
-SCHEMATICS = "schematics"
-PYDANTIC = "pydantic"
-test_modes = {SCHEMATICS: basemodels, PYDANTIC: pydantic_basemodels}
-
-# Library related errors
-validation_base_errors = {
-    SCHEMATICS: schematics.exceptions.BaseError,
-    PYDANTIC: ValidationError,
-}
-
-# Library related errors
-validation_data_errors = {
-    SCHEMATICS: schematics.exceptions.DataError,
-    PYDANTIC: ValidationError,
-}
-
 
 # A helper function for create manifest models based on model library
 def create_manifest(data: dict):
-    if test_mode == SCHEMATICS:
-        return basemodels.Manifest(data)
-    return pydantic_basemodels.Manifest.construct(**data)
+    return basemodels.Manifest.construct(**data)
 
 
 # A helper function for create nested manifest models based on model library
 def create_nested_manifest(data: dict):
-    if test_mode == SCHEMATICS:
-        return basemodels.NestedManifest(data)
-    return pydantic_basemodels.NestedManifest.construct(**data)
+    return basemodels.NestedManifest.construct(**data)
 
 
 # A helper function for create nested manifest models based on model library
 def create_webhook(data: dict):
-    if test_mode == SCHEMATICS:
-        return basemodels.Webhook(data)
-    return pydantic_basemodels.Webhook.construct(**data)
+    return basemodels.Webhook.construct(**data)
 
 
 # Json serializer for models based on libraries
 def to_json(model):
-    if test_mode == SCHEMATICS:
-        return json.dumps(model.to_primitive())
 
     # Pydantic json serializer
     return model.json()
@@ -78,13 +49,10 @@ def to_json(model):
 
 # A helper function for providing validatation function based on libraries
 def validate_func(model):
-    if test_mode == SCHEMATICS:
-        return model.validate
     return model.check
 
 
 # To be changed in runtime
-test_mode = SCHEMATICS
 test_models = basemodels
 
 
@@ -194,13 +162,13 @@ class ManifestTest(unittest.TestCase):
     def test_can_fail_toconstruct(self):
         """Tests that the manifest raises an Error when called with falsy parameters."""
         a_manifest(-1)
-        self.assertRaises(validation_data_errors[test_mode], a_manifest, "invalid amount")
+        self.assertRaises(ValidationError, a_manifest, "invalid amount")
 
     def test_can_fail_toconstruct2(self):
         """Tests that validated fields can't be broken without an exception."""
         mani = a_manifest()
         mani.taskdata_uri = "test"
-        self.assertRaises(validation_data_errors[test_mode], validate_func(mani))
+        self.assertRaises(ValidationError, validate_func(mani))
 
     def test_can_make_request_config_job(self):
         """Test that jobs with valid request_config parameter work"""
@@ -240,7 +208,7 @@ class ManifestTest(unittest.TestCase):
         manifest = a_manifest()
         manifest.request_type = "image_label_area_select"
         manifest.request_config = {"shape_type": "not-a-real-option"}
-        self.assertRaises(validation_data_errors[test_mode], validate_func(manifest))
+        self.assertRaises(ValidationError, validate_func(manifest))
 
     def test_gets_default_restrictedanswerset(self):
         """Make sure that the image_label_area_select jobs get a default RAS"""
@@ -267,11 +235,7 @@ class ManifestTest(unittest.TestCase):
         manifest = create_manifest(model)
 
         func = validate_func(manifest)
-        # Return new object for pydantic library
-        if test_mode == PYDANTIC:
-            manifest = func(True)
-        else:
-            func()
+        manifest = func(True)
 
         self.assertGreater(len(manifest.to_primitive()["requester_restricted_answer_set"].keys()), 0)
 
@@ -296,9 +260,9 @@ class ManifestTest(unittest.TestCase):
         self.assertIsInstance(model.to_primitive()["requester_question_example"], list)
 
         model.requester_question_example = "non-url"
-        self.assertRaises(validation_data_errors[test_mode], validate_func(model))
+        self.assertRaises(ValidationError, validate_func(model))
         model.requester_question_example = ["non-url"]
-        self.assertRaises(validation_data_errors[test_mode], validate_func(model))
+        self.assertRaises(ValidationError, validate_func(model))
 
         # we now allow lists in non-ilb types
         model.request_type = "image_label_area_select"
@@ -314,10 +278,7 @@ class ManifestTest(unittest.TestCase):
             "min_difficulty": 2,
         }
 
-        if test_mode == PYDANTIC:
-            manifest.restricted_audience = PyRestrictedAudience(**restricted_audience)
-        else:
-            manifest.restricted_audience = restricted_audience
+        manifest.restricted_audience = RestrictedAudience(**restricted_audience)
 
         validate_func(manifest)()
         self.assertTrue("restricted_audience" in manifest.to_primitive())
@@ -337,20 +298,13 @@ class ManifestTest(unittest.TestCase):
         """Test None fields are skipped in restricted audience"""
         restricted_audience = {"min_difficulty": 2}
 
-        if test_mode == SCHEMATICS:
-            self.assertEqual(RestrictedAudience(restricted_audience).to_primitive(), {"min_difficulty": 2})
-        else:
-            self.assertEqual(PyRestrictedAudience(**restricted_audience).dict(), {"min_difficulty": 2})
-            self.assertEqual(PyRestrictedAudience(**restricted_audience).json(), '{"min_difficulty": 2}')
+        self.assertEqual(RestrictedAudience(**restricted_audience).dict(), {"min_difficulty": 2})
+        self.assertEqual(RestrictedAudience(**restricted_audience).json(), '{"min_difficulty": 2}')
 
     def test_restricted_audience_only(self):
         def assert_raises(data):
-            if test_mode == SCHEMATICS:
-                with self.assertRaises(schematics.exceptions.BaseError):
-                    RestrictedAudience(data).validate()
-            else:
-                with self.assertRaises(ValidationError):
-                    PyRestrictedAudience(**data)
+            with self.assertRaises(ValidationError):
+                RestrictedAudience(**data)
 
         for data in [
             {"lang": "us"},
@@ -467,16 +421,12 @@ class ManifestTest(unittest.TestCase):
             "interests": [1,2,3,4],
         }
 
-        if test_mode == SCHEMATICS:
-            RestrictedAudience(data).validate()
-        else:
-            PyRestrictedAudience(**data)
+        RestrictedAudience(**data)
 
     def test_realistic_multi_challenge_example(self):
         """validates a realistic multi_challenge manifest"""
         obj = {
             "job_mode": "batch",
-            "request_type": "image_label_area_select",
             "unsafe_content": False,
             "task_bid_price": 1,
             "oracle_stake": 0.1,
@@ -570,7 +520,7 @@ class ManifestTest(unittest.TestCase):
         manifest["request_type"] = "image_label_multiple_choice"
         manifest["requester_question_example"] = ["a"]
 
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             validate_func(create_manifest(manifest))()
 
         del manifest["requester_question_example"]
@@ -634,12 +584,7 @@ class ViaTest(unittest.TestCase):
             ]
         }
 
-        # Also test the marshmallow model from the old package
-        parsed: Dict
-        if test_mode == SCHEMATICS:
-            parsed = test_models.ViaDataManifest().dump(content)
-        else:
-            parsed = test_models.ViaDataManifest(**content).dict()
+        parsed = test_models.ViaDataManifest(**content).dict()
         self.assertEqual(len(parsed["datapoints"]), 1)
         self.assertEqual(parsed["version"], 1)
 
@@ -664,12 +609,7 @@ class ViaTest(unittest.TestCase):
             ]
         }
 
-        # Also test the marshmallow model from the old package
-        parsed: Dict
-        if test_mode == SCHEMATICS:
-            parsed = test_models.ViaDataManifest().dump(content)
-        else:
-            parsed = test_models.ViaDataManifest(**content).dict()
+        parsed = test_models.ViaDataManifest(**content).dict()
         self.assertEqual(len(parsed["datapoints"]), 1)
         self.assertEqual(parsed["version"], 1)
         self.assertIn("dog", parsed["datapoints"][0]["class_attributes"])
@@ -714,14 +654,14 @@ class TestValidateManifestUris(unittest.TestCase):
     def test_groundtruth_uri_ilb_invalid(self):
         body = {"not_uri": ["false", "false", True]}
 
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             self.validate_groundtruth_response("image_label_binary", body)
 
     def test_groundtruth_uri_ilb_invalid_format(self):
         """should raise if groundtruth_uri contains array instead of object"""
         body = [{"key": "value"}]
 
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             self.validate_groundtruth_response("image_label_binary", body)
 
     def test_groundtruth_uri_ilmc_valid(self):
@@ -737,7 +677,7 @@ class TestValidateManifestUris(unittest.TestCase):
     def test_groundtruth_uri_ilmc_invalid_key(self):
         body = {"not_uri": [["cat"], ["cat"], ["cat"]]}
 
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             self.validate_groundtruth_response("image_label_multiple_choice", body)
 
     def test_groundtruth_uri_ilmc_invalid_value(self):
@@ -745,7 +685,7 @@ class TestValidateManifestUris(unittest.TestCase):
             "https://domain.com/file1.jpeg": [True, False],
         }
 
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             self.validate_groundtruth_response("image_label_multiple_choice", body)
 
     def test_groundtruth_uri_ilas_valid(self):
@@ -778,13 +718,13 @@ class TestValidateManifestUris(unittest.TestCase):
             ]
         }
 
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             self.validate_groundtruth_response("image_label_area_select", body)
 
     def test_groundtruth_uri_ilas_invalid_value(self):
         body = {"https://domain.com/file1.jpeg": [[True]]}
 
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             self.validate_groundtruth_response("image_label_area_select", body)
 
     def test_taskdata_empty(self):
@@ -795,7 +735,7 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.register_http_response(uri, manifest, body)
 
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             test_models.validate_manifest_uris(manifest)
 
     def test_taskdata_invalid_format(self):
@@ -806,7 +746,7 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.register_http_response(uri, manifest, body)
 
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             test_models.validate_manifest_uris(manifest)
 
     def test_taskdata_uri_valid(self):
@@ -836,7 +776,7 @@ class TestValidateManifestUris(unittest.TestCase):
 
         self.register_http_response(uri, manifest, body)
 
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             test_models.validate_manifest_uris(manifest)
 
     def test_groundtruth_and_taskdata_valid(self):
@@ -946,51 +886,48 @@ class TestValidateManifestUris(unittest.TestCase):
         self.register_http_response(first_uri, method=httpretty.HEAD, headers={"Content-Type": "image/html"})
         self.register_http_response(second_uri, method=httpretty.HEAD, headers={"Content-Type": "image/html"})
         self.register_http_response(third_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
-        with self.assertRaises(validation_base_errors[test_mode]):
+        with self.assertRaises(ValidationError):
             test_models.validate_manifest_example_images(manifest)
 
 
 class TaskEntryTest(unittest.TestCase):
     def test_valid_entry_is_true(self):
         taskdata = deepcopy(TASK)
-        self.assertIsNone(TaskDataEntry(taskdata).validate())
+        TaskDataEntry(**taskdata)
 
         taskdata.get("metadata")["key_1"] = None
-        self.assertIsNone(TaskDataEntry(taskdata).validate())
+        TaskDataEntry(**taskdata)
 
         taskdata.get("metadata")["key_1"] = 1.1
-        self.assertIsNone(TaskDataEntry(taskdata).validate())
+        TaskDataEntry(**taskdata)
 
         taskdata.get("metadata")["key_1"] = ""
-        self.assertIsNone(TaskDataEntry(taskdata).validate())
+        TaskDataEntry(**taskdata)
 
-        with self.assertRaises(schematics.exceptions.DataError):
+        with self.assertRaises(ValidationError):
             taskdata.get("metadata")["key_1"] += 1024 * "a"
-            TaskDataEntry(taskdata).validate()
+            TaskDataEntry(**taskdata)
 
         taskdata.pop("metadata")
-        self.assertIsNone(TaskDataEntry(taskdata).validate())
+        TaskDataEntry(**taskdata)
 
         taskdata["datapoint_text"] = {"en": "Question to test with"}
-        self.assertIsNone(TaskDataEntry(taskdata).validate())
+        TaskDataEntry(**taskdata)
 
-        with self.assertRaises(schematics.exceptions.DataError):
+        with self.assertRaises(ValidationError):
             taskdata["datapoint_text"] = {}
             taskdata["datapoint_uri"] = ""
-            TaskDataEntry(taskdata).validate()
+            TaskDataEntry(**taskdata)
 
-        with self.assertRaises(schematics.exceptions.DataError):
+        with self.assertRaises(ValidationError):
             taskdata["datapoint_uri"] = "http://com"
-            TaskDataEntry(taskdata).validate()
+            TaskDataEntry(**taskdata)
 
         taskdata["datapoint_uri"] = "https://domain.com/file1.jpg"
-        self.assertIsNone(TaskDataEntry(taskdata).validate())
+        TaskDataEntry(**taskdata)
 
 
 if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger("urllib3").setLevel(logging.INFO)
-    for mode in test_modes:
-        test_mode = mode
-        test_models = test_modes[mode]
-        unittest.main(exit=False)
+    unittest.main(exit=False)

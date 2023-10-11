@@ -1,25 +1,28 @@
-from typing import Union
+from typing import List, Optional, Union
 
 import requests
+from pydantic import BaseModel, HttpUrl, ValidationError
 from requests import RequestException
-from schematics.models import Model, ValidationError
-from schematics.types import StringType, ListType, URLType, ModelType, IntType, FloatType, UnionType
+from typing_extensions import Literal
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
 
 
 def create_wrapper_model(type):
-    class WrapperModel(Model):
-        data = type
+    class WrapperModel(BaseModel):
+        data: Optional[type]
+
+        class Config:
+            arbitrary_types_allowed = True
 
     return WrapperModel
 
 
 def validate_wrapper_model(Model, data):
-    Model({"data": data}).validate()
+    Model.validate({"data": data})
 
 
-groundtruth_entry_key_type = URLType()
+groundtruth_entry_key_type = HttpUrl
 GroundtruthEntryKeyModel = create_wrapper_model(groundtruth_entry_key_type)
 """
 Groundtruth file format for `image_label_binary` job type:
@@ -29,7 +32,7 @@ Groundtruth file format for `image_label_binary` job type:
   "https://domain.com/file2.jpeg": ["true", "true", "true"]
 }
 """
-ilb_groundtruth_entry_type = ListType(StringType(choices=["true", "false"]))
+ilb_groundtruth_entry_type = List[Literal["true", "false"]]
 ILBGroundtruthEntryModel = create_wrapper_model(ilb_groundtruth_entry_type)
 """
 Groundtruth file format for `image_label_multiple_choice` job type:
@@ -47,14 +50,14 @@ Groundtruth file format for `image_label_multiple_choice` job type:
   ]
 }
 """
-ilmc_groundtruth_entry_type = ListType(ListType(StringType))
+ilmc_groundtruth_entry_type = List[List[str]]
 ILMCGroundtruthEntryModel = create_wrapper_model(ilmc_groundtruth_entry_type)
 
 
-class ILASGroundtruthEntry(Model):
-    entity_name = UnionType([IntType, FloatType])
-    entity_type = StringType()
-    entity_coords = ListType(UnionType([IntType, FloatType]))
+class ILASGroundtruthEntry(BaseModel):
+    entity_name: float
+    entity_type: str
+    entity_coords: List[Union[int, float]]
 
 
 """
@@ -72,7 +75,7 @@ Groundtruth file format for `image_label_area_select` job type
   ]
 }
 """
-ilas_groundtruth_entry_type = ListType(ListType(ModelType(ILASGroundtruthEntry)))
+ilas_groundtruth_entry_type = List[List[ILASGroundtruthEntry]]
 ILASGroundtruthEntryModel = create_wrapper_model(ilas_groundtruth_entry_type)
 
 groundtruth_entry_models_map = {
@@ -88,11 +91,14 @@ def validate_content_type(uri: str) -> None:
         response = requests.head(uri)
         response.raise_for_status()
     except RequestException as e:
-        raise ValidationError(f"groundtruth content type ({uri}) validation failed") from e
+        raise ValidationError(f"groundtruth content type ({uri}) validation failed", GroundtruthEntryKeyModel) from e
 
     content_type = response.headers.get("Content-Type", "")
     if content_type not in SUPPORTED_CONTENT_TYPES:
-        raise ValidationError(f"groundtruth entry has unsupported type {content_type}")
+        raise ValidationError(
+            f"groundtruth entry has unsupported type {content_type}",
+            GroundtruthEntryKeyModel,
+        )
 
 
 def validate_groundtruth_entry(

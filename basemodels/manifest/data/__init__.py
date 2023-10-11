@@ -1,4 +1,4 @@
-from .helpers import validate_content_type
+from .helpers import validate_content_type, ExampleResourceModel
 from .groundtruth import validate_groundtruth_entry
 from .taskdata import validate_taskdata_entry
 from .requester_question_example import validate_requester_example_image

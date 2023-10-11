@@ -1,13 +1,20 @@
-from schematics.models import Model
-from schematics.types import StringType, DictType, UnionType, IntType, FloatType
+import enum
+import typing
+import pydantic
 
 
-class Preprocess(Model):
-    pipeline = StringType(required=True, choices=["FaceBlurPipeline", "OCRThinFilterPipeline", "UploadPipeline"])
-    config = DictType(UnionType([FloatType, IntType, StringType]))
+class Pipeline(str, enum.Enum):
+    FaceBlurPipeline = "FaceBlurPipeline"
+    OCRThinFilterPipeline = "OCRThinFilterPipeline"
+    UploadPipeline = "UploadPipeline"
+
+
+class Preprocess(pydantic.BaseModel):
+    pipeline: Pipeline
+    config: typing.Optional[dict]
 
     def to_dict(self):
-        p = {"pipeline": self.pipeline}
+        p = {"pipeline": self.pipeline.value}
         if self.config is not None:
             p["config"] = self.config
         return p

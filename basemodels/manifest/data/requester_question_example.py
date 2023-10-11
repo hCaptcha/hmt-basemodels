@@ -1,7 +1,7 @@
 from typing import Union
 from requests import RequestException
-from schematics.models import ValidationError
-from .helpers import validate_content_type
+from pydantic import ValidationError
+from .helpers import validate_content_type, ExampleResourceModel
 
 
 def validate_requester_example_image(
@@ -20,6 +20,12 @@ def validate_requester_example_image(
         else:
             raise ValidationError(f"Not supported format for requester_question_example.")
     except RequestException as e:
-        raise ValidationError(f"could not retrieve requester example image content type ({uri_val})") from e
+        raise ValidationError(
+            f"could not retrieve requester example ({uri_val})",
+            ExampleResourceModel
+        ) from e
     except ValidationError as e:
-        raise ValidationError(f"requester example image for {uri_val} has unsupported type") from e
+        raise ValidationError(
+            f"requester example image for {uri_val} has unsupported type",
+            ExampleResourceModel
+        ) from e
