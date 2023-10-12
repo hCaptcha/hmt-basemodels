@@ -8,14 +8,15 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
-requests = "^2.25.1"
-pydantic = "^1.8.1"
+python = "^3.8"
+requests = "^2.31.0"
+pydantic = "^1.10.12"
 
 [tool.poetry.dev-dependencies]
 httpretty = "^1.0.5"
 mypy = "^0.812"
 yapf = "^0.31.0"
+pytest = "^7.1.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

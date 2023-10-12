@@ -15,6 +15,6 @@ setuptools.setup(
     ],
     packages=setuptools.find_packages(),
     install_requires=[
-        "schematics>=2", "marshmallow>=3", "requests>=2", "typing-extensions", "pydantic>=1.6"
+        "requests>=2", "typing-extensions", "pydantic>=1.10.12"
     ],
 )

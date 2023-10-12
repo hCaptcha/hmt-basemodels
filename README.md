@@ -33,7 +33,7 @@ source venv/bin/activate
 ```
 Run the tests:
 ```
-python test.py
+pytest tests
 ```
 
 Lint the python files:
@@ -42,28 +42,9 @@ yapf --diff ./basemodels/__init__.py ./test.py
 mypy ./basemodels/__init__.py ./test.py --ignore-missing-imports
 ```
 ## How to use model
-Using the model (based on schematics library)
-```python
-import basemodels
-from schematics.exceptions import ValidationError
-
-model = {
-    'job_mode': 'batch',
-    'request_type': 'image_label_area_select',
-    'unsafe_content': False,
-    'task_bid_price': 1,
-    ...
-}
-manifest = basemodels.Manifest(model)
-try:
-    manifest.validate()
-except ValidationError, e:
-    print(e.messages)
-```
-  
 Using the new model (based on pydantic library)
 ```python
-import basemodels.pydantic as pydantic_models
+import basemodels
 from pydantic import ValidationError
 
 model = {
@@ -75,11 +56,11 @@ model = {
 }
 # Validate model on creation
 try:
-   manifest = pydantic_models.Manifest(**model)
+   manifest = basemodels.Manifest(**model)
 except ValidationError as e:
    print(e.json())
 # Or creating model without validation
-manifest = pydantic_models.Manifest.construct(**model)
+manifest = basemodels.Manifest.construct(**model)
 # See https://pydantic-docs.helpmanual.io/usage/models/#creating-models-without-validation
 ```
 ## Note for maintainers: Deploying to PyPi
