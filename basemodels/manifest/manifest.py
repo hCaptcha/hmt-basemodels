@@ -1,163 +1,181 @@
+import json
 import uuid
 import requests
 from requests.exceptions import RequestException
-from typing import Callable, Any
-from schematics.models import Model, ValidationError
-from schematics.exceptions import BaseError
-from schematics.types import (
-    StringType,
-    DecimalType,
-    IntType,
-    DictType,
-    ListType,
-    URLType,
-    FloatType,
-    UUIDType,
-    ModelType,
-    BooleanType,
-    UnionType,
-)
-
-from basemodels.manifest.data.groundtruth import validate_groundtruth_entry
-from basemodels.manifest.data.taskdata import validate_taskdata_entry
-from basemodels.manifest.data.requester_question_example import validate_requester_example_image
-from basemodels.manifest.data.requester_restricted_answer_set import validate_requester_restricted_answer_set_uris
+from typing_extensions import Literal
+from typing import Dict, Union, List, Optional
+from enum import Enum
+from uuid import UUID, uuid4
+from .data.groundtruth import validate_groundtruth_entry
+from .data.requester_question_example import validate_requester_example_image
+from .data.requester_restricted_answer_set import validate_requester_restricted_answer_set_uris
+from .data.taskdata import validate_taskdata_entry
+from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl
+from pydantic.fields import Field
+from decimal import Decimal
 from basemodels.manifest.restricted_audience import RestrictedAudience
 from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
 
-BASE_JOB_TYPES = [
-    "image_label_binary",
-    "image_label_multiple_choice",
-    "text_free_entry",
-    "text_multiple_choice_one_option",
-    "text_multiple_choice_multiple_options",
-    "image_label_area_adjust",
-    "image_label_area_select",
-    "image_label_single_polygon",
-    "image_label_multiple_polygons",
-    "image_label_semantic_segmentation_one_option",
-    "image_label_semantic_segmentation_multiple_options",
-    "image_label_text",
-]
 
-
-def validate_request_type(self, data, value):
-    """
-    validate request types for all types of challenges
-    multi_challenge should always have multi_challenge_manifests
-    """
-    # validation runs before other params, so need to handle missing case
-    if not data.get("request_type"):
-        raise ValidationError("request_type missing")
-
-    if data.get("request_type") == "multi_challenge":
-        if not data.get("multi_challenge_manifests"):
-            raise ValidationError("multi_challenge requires multi_challenge_manifests.")
-    elif data.get("request_type") in ["image_label_multiple_choice", "image_label_area_select"]:
-        if data.get("multiple_choice_min_choices", 1) > data.get("multiple_choice_max_choices", 1):
-            raise ValidationError("multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
-
+# Validator function for taskdata and taskdata_uri fields
+def validator_taskdata_uri(cls, value, values, **kwargs):
+    taskdata = values.get("taskdata")
+    taskdata_uri = values.get("taskdata_uri")
+    if taskdata is not None and len(taskdata) > 0 and taskdata_uri is not None:
+        raise ValidationError("Specify only one of taskdata {} or taskdata_uri {}".format(taskdata, taskdata_uri))
     return value
+
+
+# A validator function for UUID fields
+def validate_uuid(cls, value):
+    return value or uuid.uuid4()
+
+
+# Base job types
+class BaseJobTypesEnum(str, Enum):
+    image_label_binary = "image_label_binary"
+    image_label_multiple_choice = "image_label_multiple_choice"
+    text_free_entry = "text_free_entry"
+    text_multiple_choice_one_option = "text_multiple_choice_one_option"
+    text_multiple_choice_multiple_options = "text_multiple_choice_multiple_options"
+    image_label_area_adjust = "image_label_area_adjust"
+    image_label_area_select = "image_label_area_select"
+    image_label_single_polygon = "image_label_single_polygon"
+    image_label_multiple_polygons = "image_label_multiple_polygons"
+    image_label_semantic_segmentation_one_option = "image_label_semantic_segmentation_one_option"
+    image_label_semantic_segmentation_multiple_options = "image_label_semantic_segmentation_multiple_options"
+    image_label_text = "image_label_text"
+    multi_challenge = "multi_challenge"
+
+
+# Return a request type validator function
+class RequestTypeValidator(object):
+    def __init__(self, multi_challenge: bool = True):
+        self.multi_challenge = multi_challenge
+
+    def validate(self, cls, value, values):
+        """
+        validate request types for all types of challenges
+        multi_challenge should always have multi_challenge_manifests
+        """
+        if value == BaseJobTypesEnum.multi_challenge:
+            if not self.multi_challenge:
+                raise ValidationError("multi_challenge request is not allowed here.")
+            if "multi_challenge_manifests" not in values:
+                raise ValidationError("multi_challenge requires multi_challenge_manifests.")
+        elif value in [BaseJobTypesEnum.image_label_multiple_choice, BaseJobTypesEnum.image_label_area_select]:
+            if values.get("multiple_choice_min_choices", 1) > values.get("multiple_choice_max_choices", 1):
+                raise ValidationError("multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
+        return value
+
+
+# Shape types enum
+class ShapeTypes(str, Enum):
+    point = "point"
+    bounding_box = "bounding_box"
+    polygon = "polygon"
+
+
+class Model(BaseModel):
+    def to_primitive(self):
+        return self.dict()
+
+    # Helper function for using in the unittest
+    def check(self, return_new=False):
+        self.__class__.validate(self)
+        out_dict, _, validation_error = validate_model(self.__class__, self.__dict__)
+        if validation_error:
+            raise validation_error
+
+        # For compatibility with tests
+        if return_new:
+            return self.__class__(**out_dict)
 
 
 class Webhook(Model):
     """Model for webhook configuration"""
 
-    webhook_id = UUIDType(required=True)
-    chunk_completed = ListType(StringType(), required=False)
-    job_completed = ListType(StringType(), required=False)
+    webhook_id: UUID
+    chunk_completed: Optional[List[str]]
+    job_completed: Optional[List[str]]
 
     # States that might be interesting later
-    # job_skipped = ListType(StringType(), required=False)
-    # job_inserted = ListType(StringType(), required=False)
-    # job_activated = ListType(StringType(), required=False)
+    # job_skipped: List[str] = None
+    # job_inserted : List[str] = None
+    # job_activated : List[str] = None
 
 
-class TaskData(Model):
+class TaskData(BaseModel):
     """objects within taskdata list in Manifest"""
 
-    task_key = UUIDType(required=True)
-    datapoint_uri = URLType()
-    datapoint_hash = StringType(required=True, min_length=10)
-    datapoint_text = DictType(StringType)
-
-    def validate_datapoint_uri(self, data, value):
-        """
-        Validate datapoint_uri.
-
-        Raise error if no datapoint_text and no value for URI or if length of URI less than 10.
-        """
-        if not value and not data.get("datapoint_text"):
-            raise ValidationError("datapoint_uri is missing.")
-        if value and len(value) < 10 and not data.get("datapoint_text"):
-            raise ValidationError("datapoint_uri length is less than 10")
-        return value
+    task_key: UUID
+    datapoint_uri: AnyHttpUrl
+    datapoint_hash: str = Field(..., min_length=10, strip_whitespace=True)
 
 
 class RequestConfig(Model):
     """definition of the request_config object in manifest"""
 
-    version = IntType(default=0)
-    shape_type = StringType(choices=["point", "bounding_box", "polygon"])
-    min_points = IntType()
-    max_points = IntType()
-    min_shapes_per_image = IntType()
-    max_shapes_per_image = IntType()
-    restrict_to_coords = BooleanType()
-    minimum_selection_area_per_shape = IntType()
-    multiple_choice_max_choices = IntType(default=1)
-    multiple_choice_min_choices = IntType(default=1)
-    overlap_threshold = FloatType(required=False)
-    answer_type = StringType(choices=["int", "float", "str"], default="str")
-    max_value = FloatType()
-    min_value = FloatType()
-    max_length = IntType()
-    min_length = IntType()
-    sig_figs = IntType()
-    keep_answers_order = BooleanType(default=False)
-    ignore_case = BooleanType(default=False)
+    version: int = 0
+    shape_type: Optional[ShapeTypes]
+    min_points: Optional[int]
+    max_points: Optional[int]
+    min_shapes_per_image: Optional[int]
+    max_shapes_per_image: Optional[int]
+    restrict_to_coords: Optional[bool]
+    minimum_selection_area_per_shape: Optional[int]
+    multiple_choice_max_choices: Optional[int] = 1
+    multiple_choice_min_choices: Optional[int] = 1
+    overlap_threshold: Optional[float]
+    answer_type: Optional[str] = "str"
+    max_value: Optional[float]
+    min_value: Optional[float]
+    max_length: Optional[int]
+    min_length: Optional[int]
+    sig_figs: Optional[int]
+    keep_answers_order: Optional[bool]
+    ignore_case: Optional[bool] = False
 
 
 class InternalConfig(Model):
     """discarded from incoming manifests"""
 
-    exchange = DictType(UnionType([StringType, IntType, FloatType]))
-    reco = DictType(UnionType([StringType, IntType, FloatType]))
-    repo = DictType(UnionType([StringType, IntType, FloatType]))
-    other = DictType(UnionType([StringType, IntType, FloatType]))
+    exchange: Optional[Dict[str, Union[str, int, float]]]
+    reco: Optional[Dict[str, Union[str, int, float]]]
+    repo: Optional[Dict[str, Union[str, int, float]]]
+    other: Optional[Dict[str, Union[str, int, float]]]
     # Accept one layer of nested
-    mitl = DictType(
-        UnionType(
-            [
-                StringType,
-                IntType,
-                FloatType,
-                DictType(UnionType([StringType, IntType, FloatType])),
-            ]
-        )
-    )
+    mitl: Optional[Dict[str, Union[str, int, float, Dict[str, Union[str, int, float]]]]]
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class NestedManifest(Model):
     """The nested manifest description for multi_challenge jobs"""
 
-    job_id = UUIDType(default=uuid.uuid4)
+    # We will set a default dynamic value for job_id
+    job_id: Optional[UUID]
+    validate_job_id = validator("job_id", always=True, allow_reuse=True)(validate_uuid)
 
-    requester_restricted_answer_set = DictType(DictType(StringType))
+    request_type: BaseJobTypesEnum
+    validate_request_type = validator("request_type", allow_reuse=True, always=True)(
+        RequestTypeValidator(multi_challenge=False).validate
+    )
+    requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
 
-    def validate_requester_restricted_answer_set(self, data, value):
+    @validator("requester_restricted_answer_set", always=True)
+    def validate_requester_restricted_answer_set(cls, value, values, **kwargs):
         """image_label_area_select should always have a single RAS set"""
 
         # validation runs before other params, so need to handle missing case
-        if not data.get("request_type"):
+        if "request_type" not in values:
             raise ValidationError("request_type missing")
-
-        if data["request_type"] == "image_label_area_select":
+        if values["request_type"] == BaseJobTypesEnum.image_label_area_select:
             if not value or len(value.keys()) == 0:
                 value = {"label": {}}
-                data["requester_restricted_answer_set"] = value
-
-        if data["request_type"] == "image_label_multiple_choice":
+                values["requester_restricted_answer_set"] = value
+        if values["request_type"] == BaseJobTypesEnum.image_label_multiple_choice:
             if not value or len(value.keys()) <= 1:
                 raise ValidationError(
                     "image_label_multiple_choice needs at least 2+ options in requester_restricted_answer_set"
@@ -168,78 +186,149 @@ class NestedManifest(Model):
                 )
         return value
 
-    requester_description = StringType()
-    requester_max_repeats = IntType(default=100)
-    requester_min_repeats = IntType(default=1)
-    requester_question = DictType(StringType)
+    requester_description: Optional[str]
+    requester_max_repeats: int = 100
+    requester_min_repeats: int = 1
+    requester_question: Optional[Dict[str, str]]
+    requester_question_example: Optional[Union[HttpUrl, List[HttpUrl]]]
 
-    requester_question_example = UnionType((URLType, ListType), field=URLType)
-
-    requester_example_extra_fields = UnionType([DictType(StringType), ListType(DictType(StringType))], required=False)
-
-    def validate_requester_question_example(self, data, value):
+    @validator("requester_question_example")
+    def validate_requester_question_example(cls, value, values, **kwargs):
         # validation runs before other params, so need to handle missing case
-        if not data.get("request_type"):
+        if not ("request_type" in values):
             raise ValidationError("request_type missing")
 
         # based on https://github.com/hCaptcha/hmt-basemodels/issues/27#issuecomment-590706643
-        supports_lists = ["image_label_area_select", "image_label_binary"]
+        supports_lists = [BaseJobTypesEnum.image_label_area_select, BaseJobTypesEnum.image_label_binary]
 
-        if isinstance(value, list) and not data["request_type"] in supports_lists:
+        if isinstance(value, list) and not values["request_type"] in supports_lists:
             raise ValidationError("Lists are not allowed in this challenge type")
         return value
 
-    unsafe_content = BooleanType(default=False)
-    requester_accuracy_target = FloatType(default=0.1)
-    request_type = StringType(required=True, choices=BASE_JOB_TYPES)
-    validate_request_type = validate_request_type
+    unsafe_content: bool = False
+    requester_accuracy_target: float = 0.1
 
-    request_config = ModelType(RequestConfig, required=False)
+    request_config: Optional[RequestConfig]
 
     # Groundtruth data is stored as a URL or optionally as an inlined json-serialized stringtype
-    groundtruth_uri = URLType(required=False)
-    groundtruth = StringType(required=False)
+    groundtruth_uri: Optional[HttpUrl]
+    groundtruth: Optional[str]
 
-    def validate_groundtruth(self, data, value):
-        if data.get("groundtruth_uri") and data.get("groundtruth"):
+    @validator("groundtruth", always=True)
+    def validate_groundtruth(cls, v, values, **kwargs):
+        if "groundtruth_uri" in values and "groundtruth" in values:
             raise ValidationError("Specify only groundtruth_uri or groundtruth, not both.")
-        return value
+        return v
 
     # Configuration id -- XXX LEGACY
-    confcalc_configuration_id = StringType(required=False)
+    confcalc_configuration_id: Optional[str]
+    webhook: Optional[Webhook]
 
-    webhook = ModelType(Webhook)
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class Manifest(Model):
     """The manifest description."""
 
-    job_mode = StringType(required=True, choices=["batch", "online", "instant_delivery"])
-    job_api_key = UUIDType(default=uuid.uuid4)
-    job_id = UUIDType(default=uuid.uuid4)
-    job_total_tasks = IntType(required=True)
-    network = StringType(required=False)
-    only_sign_results = BooleanType(
-        default=False,
-    )
-    public_results = BooleanType(
-        default=False,
-    )
+    job_mode: Literal["batch", "online", "instant_delivery"]
 
-    requester_restricted_answer_set = DictType(DictType(StringType))
+    # We will set a default dynamic value for job_api_key
+    job_api_key: Optional[UUID]
 
-    def validate_requester_restricted_answer_set(self, data, value):
+    # We will set a default dynamic value for job_id
+    job_id: UUID = Field(default_factory=uuid4)
+
+    job_total_tasks: int
+    multi_challenge_manifests: Optional[List[NestedManifest]]
+    request_type: BaseJobTypesEnum
+    network: Optional[str]
+    only_sign_results: bool = False
+    public_results: bool = False
+
+    requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]]
+
+    requester_description: Optional[str]
+    requester_max_repeats: int = 100
+    requester_min_repeats: int = 1
+    requester_question: Optional[Dict[str, str]]
+
+    requester_question_example: Optional[Union[HttpUrl, List[HttpUrl]]]
+    requester_example_extra_fields: Optional[Union[Dict[str, str], List[Union[Dict[str, str]]]]]
+
+    unsafe_content: bool = False
+    task_bid_price: float
+    oracle_stake: Decimal
+    expiration_date: Optional[int]
+    requester_accuracy_target: float = 0.1
+    manifest_smart_bounty_addr: Optional[str]
+    hmtoken_addr: Optional[str]
+    minimum_trust_server: float = 0.1
+    minimum_trust_client: float = 0.1
+    recording_oracle_addr: Optional[str]
+    reputation_oracle_addr: Optional[str]
+    reputation_agent_addr: Optional[str]
+    requester_pgp_public_key: Optional[str]
+    ro_uri: Optional[str]
+    repo_uri: Optional[str]
+    batch_result_delivery_webhook: Optional[AnyHttpUrl]
+    online_result_delivery_webhook: Optional[AnyHttpUrl]
+    instant_result_delivery_webhook: Optional[AnyHttpUrl]
+
+    request_config: Optional[RequestConfig]
+
+    # If taskdata is directly provided
+    taskdata: Optional[List[TaskData]]
+
+    # If taskdata is separately stored
+    taskdata_uri: Optional[AnyHttpUrl]
+
+    # Groundtruth data is stored as a URL or optionally as an inlined json-serialized stringtype
+    groundtruth_uri: Optional[AnyHttpUrl]
+    groundtruth: Optional[str]
+
+    # internal config options for param tests etc.
+    internal_config: Optional[InternalConfig]
+
+    # Configuration id
+    confcalc_configuration_id: Optional[str]
+    restricted_audience: Optional[RestrictedAudience] = {}
+
+    webhook: Optional[Webhook]
+
+    rejected_uri: Optional[AnyHttpUrl]
+    rejected_count: Optional[int]
+
+    is_verification: bool = False
+
+    ##### Validators
+
+    @validator("requester_min_repeats")
+    def validate_min_repeats(cls, v, values):
+        """min repeats are required to be at least 4 if ilmc"""
+        if values["request_type"] == "image_label_multiple_choice":
+            return max(v, 4)
+        return v
+
+    @validator("groundtruth", always=True)
+    def validate_groundtruth(cls, value, values):
+        if "groundtruth_uri" in values and "groundtruth" in values:
+            raise ValueError("Specify only groundtruth_uri or groundtruth, not both.")
+        return value
+
+    @validator("requester_restricted_answer_set", always=True)
+    def validate_requester_restricted_answer_set(cls, value, values, **kwargs):
         """image_label_area_select should always have a single RAS set"""
         # validation runs before other params, so need to handle missing case
-        if not data.get("request_type"):
-            raise ValidationError("request_type missing")
+        if not ("request_type" in values):
+            raise ValueError("request_type missing")
 
-        if data["request_type"] == "image_label_area_select":
+        if values["request_type"] == BaseJobTypesEnum.image_label_area_select:
             if not value or len(value.keys()) == 0:
                 value = {"label": {}}
-                data["requester_restricted_answer_set"] = value
+                values["requester_restricted_answer_set"] = value
 
-        if data["request_type"] == "image_label_multiple_choice":
+        if values["request_type"] == BaseJobTypesEnum.image_label_multiple_choice:
             if not value or len(value.keys()) <= 1:
                 raise ValidationError(
                     "image_label_multiple_choice needs at least 2+ options in requester_restricted_answer_set"
@@ -250,149 +339,99 @@ class Manifest(Model):
                 )
         return value
 
-    requester_description = StringType()
-    requester_max_repeats = IntType(default=100)
-    requester_min_repeats = IntType(default=1)
-    requester_question = DictType(StringType)
-
-    requester_question_example = UnionType((URLType, ListType), field=URLType)
-
-    requester_example_extra_fields = UnionType([DictType(StringType), ListType(DictType(StringType))])
-
-    def validate_requester_question_example(self, data, value):
+    @validator("requester_question_example")
+    def validate_requester_question_example(cls, value, values, **kwargs):
         # validation runs before other params, so need to handle missing case
-        if not data.get("request_type"):
-            raise ValidationError("request_type missing")
+        if not ("request_type" in values):
+            raise ValueError("request_type missing")
 
         # based on https://github.com/hCaptcha/hmt-basemodels/issues/27#issuecomment-590706643
-        supports_lists = ["image_label_area_select", "image_label_binary"]
+        supports_lists = [
+            BaseJobTypesEnum.image_label_area_select,
+            BaseJobTypesEnum.image_label_binary,
+        ]
 
-        if isinstance(value, list) and not data["request_type"] in supports_lists:
-            raise ValidationError("Lists are not allowed in this challenge type")
+        if isinstance(value, list) and not (values["request_type"] in supports_lists):
+            raise ValueError("Lists are not allowed in this challenge type")
         return value
 
-    unsafe_content = BooleanType(default=False)
-    task_bid_price = DecimalType(required=True)
-    oracle_stake = DecimalType(required=True)
-    expiration_date = IntType()
-    requester_accuracy_target = FloatType(default=0.1)
-    manifest_smart_bounty_addr = StringType()
-    hmtoken_addr = StringType()
-    minimum_trust_server = FloatType(default=0.1)
-    minimum_trust_client = FloatType(default=0.1)
-    recording_oracle_addr = StringType(required=True)
-    reputation_oracle_addr = StringType(required=True)
-    reputation_agent_addr = StringType(required=True)
-    requester_pgp_public_key = StringType()
-    ro_uri = StringType()
-    repo_uri = StringType()
+    validate_taskdata_uri = validator("taskdata_uri", allow_reuse=True, always=True)(validator_taskdata_uri)
+    validate_taskdata = validator("taskdata", allow_reuse=True, always=True)(validator_taskdata_uri)
+    validate_request_type = validator("request_type", allow_reuse=True, always=True)(RequestTypeValidator().validate)
+    validate_job_api_key = validator("job_api_key", always=True, allow_reuse=True)(validate_uuid)
+    validate_job_id = validator("job_id", always=True, allow_reuse=True)(validate_uuid)
 
-    batch_result_delivery_webhook = URLType()
-    online_result_delivery_webhook = URLType()
-    instant_result_delivery_webhook = URLType()
+    class Config:
+        arbitrary_types_allowed = True
 
-    multi_challenge_manifests = ListType(ModelType(NestedManifest), required=False)
-
-    request_type = StringType(required=True, choices=BASE_JOB_TYPES + ["multi_challenge"])
-    validate_request_type = validate_request_type
-
-    request_config = ModelType(RequestConfig, required=False)
-
-    # If taskdata is directly provided
-    taskdata = ListType(ModelType(TaskData))
-
-    # If taskdata is separately stored
-    taskdata_uri = URLType()
-
-    # Groundtruth data is stored as a URL or optionally as an inlined json-serialized stringtype
-    groundtruth_uri = URLType(required=False)
-    groundtruth = StringType(required=False)
-
-    rejected_uri = URLType(required=False)
-    rejected_count = IntType(default=0, required=False)
-
-    def validate_groundtruth(self, data, value):
-        if data.get("groundtruth_uri") and data.get("groundtruth"):
-            raise ValidationError("Specify only groundtruth_uri or groundtruth, not both.")
-        return value
-
-    # internal config options for param tests etc.
-    internal_config = ModelType(InternalConfig, required=False)
-
-    # Configuration id -- XXX LEGACY
-    confcalc_configuration_id = StringType(required=False)
-
-    restricted_audience = ModelType(RestrictedAudience, required=True, default={})
-
-    is_verification = BooleanType(default=False, required=False)
-
-    def validate_taskdata_uri(self, data, value):
-        if data.get("taskdata") and len(data.get("taskdata")) > 0 and data.get("taskdata_uri"):
-            raise ValidationError(
-                "Specify only one of taskdata {} or taskdata_uri {}".format(
-                    data.get("taskdata"), data.get("taskdata_uri")
-                )
-            )
-        return value
-
-    validate_taskdata = validate_taskdata_uri
-
-    webhook = ModelType(Webhook)
+    def to_primitive(self):
+        """Override primitive function to make it serializable."""
+        manifest_json = self.json()
+        return json.loads(manifest_json)
 
 
-def traverse_json_entries(data: Any, callback: Callable, validate_image_content_type: bool) -> int:
+def validate_groundtruth_uri(manifest: dict):
     """
-    Traverse json and execute callback for each top-level entry
-
-    Could later be optimized by accepting json uri instead of the full object
-    and using streaming request/parse APIs to exit early on validation error
-
+    Validate groundtruth_uri
     Returns entries count if succeeded
     """
+    request_type = manifest.get("request_type", "")
+    validate_image_content_type = request_type in JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
+    uri_key = "groundtruth_uri"
+    uri = manifest.get(uri_key)
+    if uri is None:
+        return
+    try:
+        response = requests.get(uri, timeout=1)
+        response.raise_for_status()
 
-    entries_count = 0
+        entries_count = 0
+        data = response.json()
+        if isinstance(data, dict):
+            for k, v in data.items():
+                entries_count += 1
+                validate_groundtruth_entry(k, v, request_type, validate_image_content_type)
+                validate_image_content_type = False
+        else:
+            for v in data:
+                entries_count += 1
+                validate_groundtruth_entry("", v, request_type, validate_image_content_type)
+                validate_image_content_type = False
 
-    if isinstance(data, dict):
-        for k, v in data.items():
-            entries_count += 1
-            callback(k, v, validate_image_content_type)
-            validate_image_content_type = False
+    except (ValidationError, RequestException) as e:
+        raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
 
-    elif isinstance(data, list):
+    if entries_count == 0:
+        raise ValidationError(f"fetched {uri_key} is empty", Manifest)
+
+
+def validate_taskdata_uri(manifest: dict):
+    """
+    Validate taskdata_uri
+    Returns entries count if succeeded
+    """
+    request_type = manifest.get("request_type", "")
+    validate_image_content_type = request_type in JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
+    uri_key = "taskdata_uri"
+    uri = manifest.get(uri_key)
+    if uri is None:
+        return
+    try:
+        response = requests.get(uri, timeout=1)
+        response.raise_for_status()
+
+        entries_count = 0
+        data = response.json()
         for v in data:
             entries_count += 1
-            callback(None, v, validate_image_content_type)
-            validate_image_content_type = False
+            validate_taskdata_entry(v, validate_image_content_type)
+            validate_image_content_type = False  # We want to validate only first entry for content type
 
-    return entries_count
+    except (ValidationError, RequestException) as e:
+        raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
 
-
-def validate_manifest_uris(manifest: dict):
-    """Fetch & validate manifest's remote objects"""
-
-    request_type = manifest.get("request_type", "")
-    entry_validators = {
-        "groundtruth_uri": lambda k, v, validate: validate_groundtruth_entry(k, v, request_type, validate),
-        "taskdata_uri": lambda _, v, validate: validate_taskdata_entry(v, validate),
-    }
-
-    for uri_key, validate_entry in entry_validators.items():
-        validate_image_content_type = request_type in JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
-        uri = manifest.get(uri_key)
-
-        if uri is None:
-            continue
-
-        try:
-            response = requests.get(uri)
-            response.raise_for_status()
-
-            entries_count = traverse_json_entries(response.json(), validate_entry, validate_image_content_type)
-        except (BaseError, RequestException) as e:
-            raise ValidationError(f"{uri_key} validation failed: {e}") from e
-
-        if entries_count == 0:
-            raise ValidationError(f"fetched {uri_key} is empty")
+    if entries_count == 0:
+        raise ValidationError(f"fetched {uri_key} is empty", Manifest)
 
 
 def validate_manifest_example_images(manifest: dict):
@@ -404,3 +443,9 @@ def validate_manifest_example_images(manifest: dict):
         validate_requester_example_image(question_example)
     if req_res_answer_set:
         validate_requester_restricted_answer_set_uris(req_res_answer_set)
+
+
+def validate_manifest_uris(manifest: dict):
+    """Fetch & validate manifest's remote objects"""
+    validate_taskdata_uri(manifest)
+    validate_groundtruth_uri(manifest)

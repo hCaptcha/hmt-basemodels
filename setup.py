@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="hmt-basemodels",
-    version="0.1.32",
+    version="0.2.0",
     author="HUMAN Protocol",
     description="Common data models shared by various components of the Human Protocol stack",
     url="https://github.com/hCaptcha/hmt-basemodels",
@@ -15,6 +15,6 @@ setuptools.setup(
     ],
     packages=setuptools.find_packages(),
     install_requires=[
-        "schematics>=2", "marshmallow>=3", "requests>=2", "typing-extensions", "pydantic>=1.6"
+        "requests>=2", "typing-extensions", "pydantic>=1.10.12"
     ],
 )

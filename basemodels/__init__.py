@@ -14,3 +14,4 @@ from .manifest.data import (
     validate_requester_restricted_answer_set_uris,
 )
 from .via import ViaDataManifest
+from .manifest.data.preprocess import Pipeline, Preprocess
