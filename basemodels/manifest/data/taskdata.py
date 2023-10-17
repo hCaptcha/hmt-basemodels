@@ -2,7 +2,7 @@ from typing import Dict, Optional, Union, Any
 from uuid import UUID
 
 import requests
-from pydantic import BaseModel, HttpUrl, validate_model, ValidationError, validator
+from pydantic import BaseModel, HttpUrl, validate_model, ValidationError, validator, root_validator
 from requests import RequestException
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
@@ -21,23 +21,27 @@ class TaskDataEntry(BaseModel):
       {
         "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
         "datapoint_uri": "https://domain.com/file1.jpg",
+        "datapoint_text": {},
         "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
       },
       {
         "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
         "datapoint_uri": "https://domain.com/file2.jpg",
+        "datapoint_text": {},
         "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa"
       }
     ]
     """
 
     task_key: Optional[UUID]
-    datapoint_uri: HttpUrl
+    datapoint_uri: Optional[HttpUrl]
+    datapoint_text: Optional[Dict[str, str]]
 
     @validator("datapoint_uri", always=True)
     def validate_datapoint_uri(cls, value):
-        if len(value) < 10:
+        if value and len(value) < 10:
             raise ValidationError("datapoint_uri need to be at least 10 char length.")
+        return value
 
     @validator("metadata")
     def validate_metadata(cls, value):
@@ -54,6 +58,17 @@ class TaskDataEntry(BaseModel):
 
     datapoint_hash: Optional[str]
     metadata: Optional[Dict[str, Optional[Union[str, int, float, Dict[str, Any]]]]]
+
+    @root_validator
+    def validate_datapoint_text(cls, values):
+        """
+        Validate datapoint_uri.
+
+        Raise error if no datapoint_text and no value for URI.
+        """
+        if not values.get("datapoint_uri") and not values.get("datapoint_text"):
+            raise ValueError("datapoint_uri is missing.")
+        return values
 
 
 def validate_content_type(uri: str) -> None:

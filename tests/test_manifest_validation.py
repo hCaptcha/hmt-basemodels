@@ -912,7 +912,9 @@ class TaskEntryTest(unittest.TestCase):
         TaskDataEntry(**taskdata)
 
         taskdata["datapoint_text"] = {"en": "Question to test with"}
-        TaskDataEntry(**taskdata)
+        taskdata.pop("datapoint_uri")
+        taskdata_cons = TaskDataEntry(**taskdata)
+        self.assertEqual(taskdata_cons.datapoint_text, {"en": "Question to test with"})
 
         with self.assertRaises(ValidationError):
             taskdata["datapoint_text"] = {}
