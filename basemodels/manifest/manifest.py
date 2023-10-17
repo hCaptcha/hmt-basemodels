@@ -10,7 +10,7 @@ from .data.groundtruth import validate_groundtruth_entry
 from .data.requester_question_example import validate_requester_example_image
 from .data.requester_restricted_answer_set import validate_requester_restricted_answer_set_uris
 from .data.taskdata import validate_taskdata_entry
-from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl
+from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl, root_validator
 from pydantic.fields import Field
 from decimal import Decimal
 from basemodels.manifest.restricted_audience import RestrictedAudience
@@ -109,8 +109,26 @@ class TaskData(BaseModel):
     """objects within taskdata list in Manifest"""
 
     task_key: UUID
-    datapoint_uri: AnyHttpUrl
+    datapoint_uri: Optional[AnyHttpUrl]
+    datapoint_text: Optional[Dict[str, str]]
     datapoint_hash: str = Field(..., min_length=10, strip_whitespace=True)
+
+    @validator("datapoint_uri", always=True)
+    def validate_datapoint_uri(cls, value):
+        if value and len(value) < 10:
+            raise ValidationError("datapoint_uri need to be at least 10 char length.")
+        return value
+
+    @root_validator
+    def validate_datapoint_text(cls, values):
+        """
+        Validate datapoint_uri.
+
+        Raise error if no datapoint_text and no value for URI.
+        """
+        if not values.get("datapoint_uri") and not values.get("datapoint_text"):
+            raise ValueError("datapoint_uri is missing.")
+        return values
 
 
 class RequestConfig(Model):
