@@ -445,8 +445,11 @@ def validate_taskdata_uri(manifest: dict):
             validate_taskdata_entry(v, validate_image_content_type)
             validate_image_content_type = False  # We want to validate only first entry for content type
 
-    except (ValidationError, RequestException) as e:
-        raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
+    except RequestException as req_err:
+        raise ValidationError(f"{uri_key} validation failed: {req_err}", Manifest) from req_err
+
+    except ValidationError as val_error:
+        raise ValidationError(f"{uri_key} validation failed: {val_error.errors()}", Manifest) from val_error
 
     if entries_count == 0:
         raise ValidationError(f"fetched {uri_key} is empty", Manifest)
