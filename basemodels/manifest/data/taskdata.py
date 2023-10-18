@@ -3,6 +3,7 @@ from uuid import UUID
 
 import requests
 from pydantic import BaseModel, HttpUrl, validate_model, ValidationError, validator, root_validator
+from pydantic.error_wrappers import ErrorWrapper
 from requests import RequestException
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
@@ -77,13 +78,23 @@ def validate_content_type(uri: str) -> None:
         response = requests.head(uri)
         response.raise_for_status()
     except RequestException as e:
-        raise ValidationError(f"taskdata content type ({uri}) validation failed", TaskDataEntry()) from e
+        raise ValidationError(
+            [
+                ErrorWrapper(ValueError(f"taskdata content type ({uri}) validation failed"), "datapoint_uri")
+            ],
+            TaskDataEntry
+        ) from e
 
     content_type = response.headers.get("Content-Type", "")
     if content_type not in SUPPORTED_CONTENT_TYPES:
         raise ValidationError(
-            f"taskdata entry datapoint_uri has unsupported type {content_type}",
-            TaskDataEntry(),
+            [
+                ErrorWrapper(
+                    ValueError(f"taskdata entry datapoint_uri has unsupported type {content_type}"),
+                    "datapoint_uri"
+                )
+            ],
+            TaskDataEntry
         )
 
 
