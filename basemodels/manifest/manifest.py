@@ -11,6 +11,7 @@ from .data.requester_question_example import validate_requester_example_image
 from .data.requester_restricted_answer_set import validate_requester_restricted_answer_set_uris
 from .data.taskdata import validate_taskdata_entry
 from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl, root_validator
+from pydantic.error_wrappers import ErrorWrapper
 from pydantic.fields import Field
 from decimal import Decimal
 from basemodels.manifest.restricted_audience import RestrictedAudience
@@ -116,7 +117,7 @@ class TaskData(BaseModel):
     @validator("datapoint_uri", always=True)
     def validate_datapoint_uri(cls, value):
         if value and len(value) < 10:
-            raise ValidationError("datapoint_uri need to be at least 10 char length.")
+            raise ValueError("datapoint_uri need to be at least 10 char length.")
         return value
 
     @root_validator
@@ -188,18 +189,18 @@ class NestedManifest(Model):
 
         # validation runs before other params, so need to handle missing case
         if "request_type" not in values:
-            raise ValidationError("request_type missing")
+            raise ValueError("request_type missing")
         if values["request_type"] == BaseJobTypesEnum.image_label_area_select:
             if not value or len(value.keys()) == 0:
                 value = {"label": {}}
                 values["requester_restricted_answer_set"] = value
         if values["request_type"] == BaseJobTypesEnum.image_label_multiple_choice:
             if not value or len(value.keys()) <= 1:
-                raise ValidationError(
+                raise ValueError(
                     "image_label_multiple_choice needs at least 2+ options in requester_restricted_answer_set"
                 )
             elif len(value.keys()) > 4:
-                raise ValidationError(
+                raise ValueError(
                     "image_label_multiple_choice can not handle more than 4 options requester_restricted_answer_set"
                 )
         return value
@@ -214,13 +215,13 @@ class NestedManifest(Model):
     def validate_requester_question_example(cls, value, values, **kwargs):
         # validation runs before other params, so need to handle missing case
         if not ("request_type" in values):
-            raise ValidationError("request_type missing")
+            raise ValueError("request_type missing")
 
         # based on https://github.com/hCaptcha/hmt-basemodels/issues/27#issuecomment-590706643
         supports_lists = [BaseJobTypesEnum.image_label_area_select, BaseJobTypesEnum.image_label_binary]
 
         if isinstance(value, list) and not values["request_type"] in supports_lists:
-            raise ValidationError("Lists are not allowed in this challenge type")
+            raise ValueError("Lists are not allowed in this challenge type")
         return value
 
     unsafe_content: bool = False
@@ -235,7 +236,7 @@ class NestedManifest(Model):
     @validator("groundtruth", always=True)
     def validate_groundtruth(cls, v, values, **kwargs):
         if "groundtruth_uri" in values and "groundtruth" in values:
-            raise ValidationError("Specify only groundtruth_uri or groundtruth, not both.")
+            raise ValueError("Specify only groundtruth_uri or groundtruth, not both.")
         return v
 
     # Configuration id -- XXX LEGACY
@@ -348,11 +349,11 @@ class Manifest(Model):
 
         if values["request_type"] == BaseJobTypesEnum.image_label_multiple_choice:
             if not value or len(value.keys()) <= 1:
-                raise ValidationError(
+                raise ValueError(
                     "image_label_multiple_choice needs at least 2+ options in requester_restricted_answer_set"
                 )
             elif len(value.keys()) > 4:
-                raise ValidationError(
+                raise ValueError(
                     "image_label_multiple_choice can not handle more than 4 options requester_restricted_answer_set"
                 )
         return value
@@ -417,10 +418,20 @@ def validate_groundtruth_uri(manifest: dict):
                 validate_image_content_type = False
 
     except (ValidationError, RequestException) as e:
-        raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
+        raise ValidationError(
+            [
+                ErrorWrapper(ValueError(f"Validation failed for {uri}: {e}"), uri_key)
+            ],
+            Manifest
+        ) from e
 
     if entries_count == 0:
-        raise ValidationError(f"fetched {uri_key} is empty", Manifest)
+        raise ValidationError(
+            [
+                ErrorWrapper(ValueError(f"fetched {uri} is empty"), uri_key)
+            ],
+            Manifest
+        )
 
 
 def validate_taskdata_uri(manifest: dict):
@@ -446,10 +457,20 @@ def validate_taskdata_uri(manifest: dict):
             validate_image_content_type = False  # We want to validate only first entry for content type
 
     except (ValidationError, RequestException) as e:
-        raise ValidationError(f"{uri_key} validation failed: {e}", Manifest) from e
+        raise ValidationError(
+            [
+                ErrorWrapper(ValueError(f"Validation failed for {uri}: {e}"), uri_key)
+            ],
+            Manifest
+        ) from e
 
     if entries_count == 0:
-        raise ValidationError(f"fetched {uri_key} is empty", Manifest)
+        raise ValidationError(
+            [
+                ErrorWrapper(ValueError(f"fetched {uri} is empty"), uri_key)
+            ],
+            Manifest
+        )
 
 
 def validate_manifest_example_images(manifest: dict):

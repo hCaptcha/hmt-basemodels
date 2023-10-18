@@ -1,5 +1,7 @@
 import requests
 from pydantic import ValidationError, BaseModel, HttpUrl
+from pydantic.error_wrappers import ErrorWrapper
+
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
 
 
@@ -13,4 +15,9 @@ def validate_content_type(uri: str) -> None:
     response.raise_for_status()
     content_type = response.headers.get("Content-Type", "")
     if content_type not in SUPPORTED_CONTENT_TYPES:
-        raise ValidationError(f"Unsupported type {content_type}", ExampleResourceModel())
+        raise ValidationError(
+            [
+                ErrorWrapper(ValueError(f"Unsupported type {content_type}"), "answer_example_uri")
+            ],
+            ExampleResourceModel
+        )
