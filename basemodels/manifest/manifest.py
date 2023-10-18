@@ -11,6 +11,7 @@ from .data.requester_question_example import validate_requester_example_image
 from .data.requester_restricted_answer_set import validate_requester_restricted_answer_set_uris
 from .data.taskdata import validate_taskdata_entry
 from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl, root_validator
+from pydantic.error_wrappers import ErrorWrapper
 from pydantic.fields import Field
 from decimal import Decimal
 from basemodels.manifest.restricted_audience import RestrictedAudience
@@ -445,11 +446,13 @@ def validate_taskdata_uri(manifest: dict):
             validate_taskdata_entry(v, validate_image_content_type)
             validate_image_content_type = False  # We want to validate only first entry for content type
 
-    except RequestException as req_err:
-        raise ValidationError(f"{uri_key} validation failed: {req_err}", Manifest) from req_err
-
-    except ValidationError as val_error:
-        raise ValidationError(f"{uri_key} validation failed: {val_error.errors()}", Manifest) from val_error
+    except (ValidationError, RequestException) as e:
+        raise ValidationError(
+            [
+                ErrorWrapper(ValueError(f"Validation failed for {uri}: {e}"), uri_key)
+            ],
+            Manifest
+        ) from e
 
     if entries_count == 0:
         raise ValidationError(f"fetched {uri_key} is empty", Manifest)
