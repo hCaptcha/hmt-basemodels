@@ -55,7 +55,7 @@ ILMCGroundtruthEntryModel = create_wrapper_model(ilmc_groundtruth_entry_type)
 
 
 class ILASGroundtruthEntry(BaseModel):
-    entity_name: float
+    entity_name: Optional[Union[int, float]]
     entity_type: str
     entity_coords: List[Union[int, float]]
 
