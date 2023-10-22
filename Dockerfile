@@ -1,4 +1,4 @@
-FROM python:3.9.16-slim-bullseye
+FROM python:3.9.18-slim-bullseye
 
 WORKDIR /work
 RUN apt-get update -y && \
