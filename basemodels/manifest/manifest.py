@@ -20,15 +20,6 @@ from basemodels.manifest.restricted_audience import RestrictedAudience
 from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
 
 
-# Validator function for taskdata and taskdata_uri fields
-def validator_taskdata_uri(cls, value, values, **kwargs):
-    taskdata = values.get("taskdata")
-    taskdata_uri = values.get("taskdata_uri")
-    if taskdata is not None and len(taskdata) > 0 and taskdata_uri is not None:
-        raise ValidationError("Specify only one of taskdata {} or taskdata_uri {}".format(taskdata, taskdata_uri))
-    return value
-
-
 # A validator function for UUID fields
 def validate_uuid(cls, value):
     return value or uuid.uuid4()
@@ -329,6 +320,14 @@ class Manifest(Model):
     def validate(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         start_date = values["start_date"]
         expiration_date = values["expiration_date"]
+        # validate at least taskdata or taskdata_uri is present
+        taskdata = values.get("taskdata")
+        taskdata_uri = values.get("taskdata_uri")
+        if taskdata is not None and len(taskdata) > 0 and taskdata_uri is not None:
+            raise ValueError("Specify only one of taskdata {} or taskdata_uri {}".format(taskdata, taskdata_uri))
+        if taskdata is None and taskdata_uri is None:
+            raise ValueError("No taskdata or taskdata_uri found in manifest")
+
         if not start_date and not expiration_date:
             # Timestamps are not passed
             return values
@@ -397,8 +396,6 @@ class Manifest(Model):
             raise ValueError("Lists are not allowed in this challenge type")
         return value
 
-    validate_taskdata_uri = validator("taskdata_uri", allow_reuse=True, always=True)(validator_taskdata_uri)
-    validate_taskdata = validator("taskdata", allow_reuse=True, always=True)(validator_taskdata_uri)
     validate_request_type = validator("request_type", allow_reuse=True, always=True)(RequestTypeValidator().validate)
     validate_job_api_key = validator("job_api_key", always=True, allow_reuse=True)(validate_uuid)
     validate_job_id = validator("job_id", always=True, allow_reuse=True)(validate_uuid)
