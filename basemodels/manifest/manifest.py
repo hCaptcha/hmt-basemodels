@@ -1,9 +1,11 @@
 import json
 import uuid
+from datetime import datetime
+
 import requests
 from requests.exceptions import RequestException
 from typing_extensions import Literal
-from typing import Dict, Union, List, Optional
+from typing import Dict, Union, List, Optional, Any
 from enum import Enum
 from uuid import UUID, uuid4
 from .data.groundtruth import validate_groundtruth_entry
@@ -84,7 +86,7 @@ class Model(BaseModel):
 
     # Helper function for using in the unittest
     def check(self, return_new=False):
-        self.__class__.validate(self)
+        self.__class__.validate(self.dict())
         out_dict, _, validation_error = validate_model(self.__class__, self.__dict__)
         if validation_error:
             raise validation_error
@@ -280,6 +282,7 @@ class Manifest(Model):
     task_bid_price: float
     oracle_stake: Decimal
     expiration_date: Optional[int]
+    start_date: Optional[int]
     requester_accuracy_target: float = 0.1
     manifest_smart_bounty_addr: Optional[str]
     hmtoken_addr: Optional[str]
@@ -322,6 +325,26 @@ class Manifest(Model):
     is_verification: bool = False
 
     ##### Validators
+
+    @root_validator
+    def validate(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        start_date = values["start_date"]
+        expiration_date = values["expiration_date"]
+        if not start_date and not expiration_date:
+            # Timestamps are not passed
+            return values
+        has_both_dates = bool(start_date) and bool(expiration_date)
+        if not has_both_dates:
+            raise ValueError("You must specify both start_date and expiration_date")
+
+        if not start_date < expiration_date:
+            raise ValueError("start_date must be before expiration_date")
+
+        duration = datetime.utcfromtimestamp(expiration_date) - datetime.utcfromtimestamp(start_date)
+        if 7 < duration.days:
+            raise ValueError("Max job duration is 7 days.")
+
+        return values
 
     @validator("requester_min_repeats")
     def validate_min_repeats(cls, v, values):

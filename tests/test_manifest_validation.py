@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 
-from pydantic import ValidationError
-from typing import Any
-
-import logging
-import basemodels
-from uuid import uuid4
-from copy import deepcopy
-
-from basemodels.manifest.data.taskdata import TaskDataEntry
-
-import unittest
-import httpretty
 import json
+import logging
+import unittest
+from copy import deepcopy
+from datetime import datetime
+from typing import Any
+from uuid import uuid4
 
+import httpretty
+from pydantic import ValidationError
+
+import basemodels
+from basemodels.manifest.data.taskdata import TaskDataEntry
 from basemodels.manifest.restricted_audience import RestrictedAudience
 
 CALLBACK_URL = "http://google.com/webback"
@@ -56,18 +55,18 @@ def validate_func(model):
 test_models = basemodels
 
 
-def a_manifest(
-    number_of_tasks=100,
-    bid_amount=1.0,
-    oracle_stake=0.05,
-    expiration_date=0,
-    minimum_trust=0.1,
-    request_type=IMAGE_LABEL_BINARY,
-    request_config=None,
-    job_mode="batch",
-    multi_challenge_manifests=None,
-    is_verification=None,
-) -> Any:
+def get_data(
+        number_of_tasks=100,
+        bid_amount=1.0,
+        oracle_stake=0.05,
+        expiration_date=0,
+        minimum_trust=0.1,
+        request_type=IMAGE_LABEL_BINARY,
+        request_config=None,
+        job_mode="batch",
+        multi_challenge_manifests=None,
+        is_verification=None,
+) -> dict:
     internal_config = {"exchange": {"a": 1, "b": "c"}}
     model = {
         "requester_restricted_answer_set": {
@@ -104,7 +103,34 @@ def a_manifest(
     if is_verification is not None:
         model.update({"is_verification": is_verification})
 
-    manifest = create_manifest(model)
+    return model
+
+
+def a_manifest(
+    number_of_tasks=100,
+    bid_amount=1.0,
+    oracle_stake=0.05,
+    expiration_date=0,
+    minimum_trust=0.1,
+    request_type=IMAGE_LABEL_BINARY,
+    request_config=None,
+    job_mode="batch",
+    multi_challenge_manifests=None,
+    is_verification=None,
+) -> Any:
+    data = get_data(
+        number_of_tasks=number_of_tasks,
+        bid_amount=bid_amount,
+        oracle_stake=oracle_stake,
+        expiration_date=expiration_date,
+        minimum_trust=minimum_trust,
+        request_type=request_type,
+        request_config=request_config,
+        job_mode=job_mode,
+        multi_challenge_manifests=multi_challenge_manifests,
+        is_verification=is_verification,
+    )
+    manifest = create_manifest(data)
     validate_func(manifest)()
     return manifest
 
@@ -497,6 +523,60 @@ class ManifestTest(unittest.TestCase):
         model = create_manifest(obj)
         # print(model.to_primitive())
         self.assertTrue(validate_func(model)() is None)
+
+    def test_both_timestamps_are_required(self):
+        """validates both start_date & expiration_date must be passed at the same time."""
+        # Given
+        data = get_data()
+        del data["expiration_date"]
+        data["start_date"] = int(datetime(2023, 10, 20).timestamp())
+
+        # When/Then
+        with self.assertRaises(ValueError):
+            basemodels.Manifest(**data)
+
+        # When/Then
+        del data["start_date"]
+        data["expiration_date"] = int(datetime(2023, 10, 21).timestamp())
+        with self.assertRaises(ValueError):
+            basemodels.Manifest(**data)
+
+        # When/Then
+        data["start_date"] = int(datetime(2023, 10, 20).timestamp())
+        data["expiration_date"] = int(datetime(2023, 10, 21).timestamp())
+        basemodels.Manifest(**data)
+
+    def test_timestamps_validation(self):
+        """validates start_date must be before expiration_date."""
+        # Given
+        data = get_data()
+        data["start_date"] = int(datetime(2023, 10, 22).timestamp())
+        data["expiration_date"] = int(datetime(2023, 10, 21).timestamp())
+
+        # When/Then
+        with self.assertRaises(ValueError):
+            basemodels.Manifest(**data)
+
+        # When/Then
+        data["start_date"] = int(datetime(2023, 10, 20).timestamp())
+        data["expiration_date"] = int(datetime(2023, 10, 21).timestamp())
+        basemodels.Manifest(**data)
+
+    def test_timestamps_duration_validation(self):
+        """validates max duration."""
+        # Given
+        data = get_data()
+        data["start_date"] = datetime(2023, 10, 20).timestamp()
+        data["expiration_date"] = datetime(2023, 10, 28).timestamp()
+
+        # When/Then
+        with self.assertRaises(ValueError):
+            basemodels.Manifest(**data)
+
+        # When/Then
+        data["start_date"] = datetime(2023, 10, 20).timestamp()
+        data["expiration_date"] = datetime(2023, 10, 27).timestamp()
+        basemodels.Manifest(**data)
 
     def test_webhook(self):
         """Test that webhook is correct"""
