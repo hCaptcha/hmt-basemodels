@@ -30,6 +30,7 @@ class BaseJobTypesEnum(str, Enum):
     image_label_binary = "image_label_binary"
     image_label_multiple_choice = "image_label_multiple_choice"
     text_free_entry = "text_free_entry"
+    text_label_multiple_span_select = "text_label_multiple_span_select"
     text_multiple_choice_one_option = "text_multiple_choice_one_option"
     text_multiple_choice_multiple_options = "text_multiple_choice_multiple_options"
     image_label_area_adjust = "image_label_area_adjust"
