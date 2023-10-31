@@ -801,6 +801,43 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.validate_groundtruth_response("image_label_area_select", body)
 
+    def test_groundtruth_uri_tlmss_valid(self):
+        groundtruth_uri = "https://domain.com/file1.txt"
+        body = {
+            groundtruth_uri: [
+              {"start": 0, "end": 4, "label": "0"},
+              {"start": 17, "end": 89, "label": "1"},
+            ]
+        }
+        self.register_http_response(groundtruth_uri, method=httpretty.HEAD, headers={"Content-Type": "text/plain"})
+        self.validate_groundtruth_response("text_label_multiple_span_select", body)
+
+
+    def test_groundtruth_uri_tlmss_invalid_key(self):
+        body = {
+            "not_uri": [
+              {"start": 0, "end": 4, "label": "0"},
+              {"start": 17, "end": 89, "label": "1"},
+            ]
+        }
+
+        with self.assertRaises(ValidationError):
+            self.validate_groundtruth_response("text_label_multiple_span_select", body)
+
+
+    def test_groundtruth_uri_tlmss_invalid_value(self):
+        body = {
+            "https://www.domain.com/file1.txt": [
+              {"span": [0, 4]},
+              {"span": [17, 89], "label": "1"},
+            ]
+        }
+
+        with self.assertRaises(ValidationError):
+            self.validate_groundtruth_response("text_label_multiple_span_select", body)
+
+
+
     def test_groundtruth_uri_ilas_invalid_value(self):
         body = {"https://domain.com/file1.jpeg": [[True]]}
 

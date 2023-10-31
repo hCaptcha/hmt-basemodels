@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 
 import requests
-from pydantic import BaseModel, HttpUrl, ValidationError
+from pydantic import BaseModel, HttpUrl, ValidationError, conlist, validator, root_validator, Field
 from requests import RequestException
 from typing_extensions import Literal
 
@@ -78,12 +78,35 @@ Groundtruth file format for `image_label_area_select` job type
 ilas_groundtruth_entry_type = List[List[ILASGroundtruthEntry]]
 ILASGroundtruthEntryModel = create_wrapper_model(ilas_groundtruth_entry_type)
 
+class TLMSSGroundTruthEntry(BaseModel):
+    start: int
+    end: int
+    label: str
+
+
+"""
+Groundtruth file format for `text_label_multiple_span_select` job type
+
+{
+  "https://domain.com/file1.txt": [
+    {
+      "start": 0,
+      "end": 4,
+      "label": "0"
+    }
+  ]
+}
+"""
+tlmss_groundtruth_entry_type = List[TLMSSGroundTruthEntry]
+TLMSSGroundTruthEntryModel = create_wrapper_model(tlmss_groundtruth_entry_type)
+
+
 groundtruth_entry_models_map = {
     "image_label_binary": ILBGroundtruthEntryModel,
     "image_label_multiple_choice": ILMCGroundtruthEntryModel,
     "image_label_area_select": ILASGroundtruthEntryModel,
+    "text_label_multiple_span_select": TLMSSGroundTruthEntryModel,
 }
-
 
 def validate_content_type(uri: str) -> None:
     """Validate uri content type"""
