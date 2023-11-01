@@ -196,6 +196,13 @@ class ManifestTest(unittest.TestCase):
         mani.taskdata_uri = "test"
         self.assertRaises(ValidationError, validate_func(mani))
 
+    def test_manifest_must_contain_taskdata(self):
+        """Tests that manifest raises error when there is no taskdata"""
+        manifest = get_data()
+        manifest["taskdata_uri"] = None
+        with self.assertRaises(ValidationError):
+            basemodels.manifest.Manifest(**manifest)
+
     def test_can_make_request_config_job(self):
         """Test that jobs with valid request_config parameter work"""
         manifest = a_manifest(

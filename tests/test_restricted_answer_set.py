@@ -13,6 +13,7 @@ MANIFEST_VALUES = {
     "recording_oracle_addr": "0x6a0E68eA5F706339dd6bd354F53EfcB5B9e53E49",
     "reputation_oracle_addr": "0x6a0E68eA5F706339dd6bd354F53EfcB5B9e53E49",
     "reputation_agent_addr": "0x6a0E68eA5F706339dd6bd354F53EfcB5B9e53E49",
+    "taskdata_uri": "http://google.com/fake",
 }
 
 NESTED_MANIFEST_VALUES = {
