@@ -2,8 +2,8 @@ from typing import Dict, Optional, Union, Any
 from uuid import UUID
 
 import requests
-from pydantic import BaseModel, HttpUrl, validate_model, ValidationError, validator, root_validator
-from pydantic.error_wrappers import ErrorWrapper
+from pydantic import BaseModel, HttpUrl, ValidationError, field_validator, model_validator
+from pydantic_core.core_schema import ValidationInfo
 from requests import RequestException
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
@@ -34,33 +34,33 @@ class TaskDataEntry(BaseModel):
     ]
     """
 
-    task_key: Optional[UUID]
-    datapoint_uri: Optional[HttpUrl]
-    datapoint_text: Optional[Dict[str, str]]
+    task_key: Optional[UUID] = None
+    datapoint_uri: Optional[HttpUrl] = None
+    datapoint_text: Optional[Dict[str, str]] = None
 
-    @validator("datapoint_uri", always=True)
+    @field_validator("datapoint_uri")
     def validate_datapoint_uri(cls, value):
-        if value and len(value) < 10:
-            raise ValidationError("datapoint_uri need to be at least 10 char length.")
+        if value and len(str(value)) < 10:
+            raise ValueError("datapoint_uri need to be at least 10 char length.")
         return value
 
-    @validator("metadata")
+    @field_validator("metadata")
     def validate_metadata(cls, value):
         if value is None:
             return value
 
         if len(value) > 10:
-            raise ValidationError("10 key max. in metadata")
+            raise ValueError("10 key max. in metadata")
 
         if len(str(value)) > 1024:
-            raise ValidationError("metadata should be < 1024")
+            raise ValueError("metadata should be < 1024")
 
         return value
 
-    datapoint_hash: Optional[str]
-    metadata: Optional[Dict[str, Optional[Union[str, int, float, Dict[str, Any]]]]]
+    datapoint_hash: Optional[str] = None
+    metadata: Optional[Dict[str, Optional[Union[str, int, float, Dict[str, Any]]]]] = None
 
-    @root_validator
+    @model_validator(mode="before")
     def validate_datapoint_text(cls, values):
         """
         Validate datapoint_uri.
@@ -78,24 +78,11 @@ def validate_content_type(uri: str) -> None:
         response = requests.head(uri)
         response.raise_for_status()
     except RequestException as e:
-        raise ValidationError(
-            [
-                ErrorWrapper(ValueError(f"taskdata content type ({uri}) validation failed"), "datapoint_uri")
-            ],
-            TaskDataEntry
-        ) from e
+        raise ValidationError(f"taskdata content type ({uri}) validation failed", TaskDataEntry()) from e
 
     content_type = response.headers.get("Content-Type", "")
     if content_type not in SUPPORTED_CONTENT_TYPES:
-        raise ValidationError(
-            [
-                ErrorWrapper(
-                    ValueError(f"taskdata entry datapoint_uri has unsupported type {content_type}"),
-                    "datapoint_uri"
-                )
-            ],
-            TaskDataEntry
-        )
+        raise ValidationError(f"taskdata entry datapoint_uri has unsupported type {content_type}", TaskDataEntry())
 
 
 def validate_taskdata_entry(value: dict, validate_image_content_type: bool) -> None:
@@ -103,9 +90,7 @@ def validate_taskdata_entry(value: dict, validate_image_content_type: bool) -> N
     if not isinstance(value, dict):
         raise ValidationError("taskdata entry should be dict", TaskDataEntry())
 
-    *_, validation_error = validate_model(TaskDataEntry, value)
-    if validation_error:
-        raise validation_error
+    task_data = TaskDataEntry(**value)
 
     if validate_image_content_type:
-        validate_content_type(value["datapoint_uri"])
+        validate_content_type(task_data.datapoint_uri)

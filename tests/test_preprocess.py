@@ -1,6 +1,6 @@
 import unittest
 
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 from basemodels import Preprocess, Pipeline
 
 

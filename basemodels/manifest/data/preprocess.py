@@ -11,7 +11,7 @@ class Pipeline(str, enum.Enum):
 
 class Preprocess(pydantic.BaseModel):
     pipeline: Pipeline
-    config: typing.Optional[dict]
+    config: typing.Optional[dict] = None
 
     def to_dict(self):
         p = {"pipeline": self.pipeline.value}

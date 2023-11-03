@@ -1,6 +1,5 @@
 from typing import Union
 
-from pydantic.error_wrappers import ErrorWrapper
 from requests import RequestException
 from pydantic import ValidationError
 from .helpers import validate_content_type, ExampleResourceModel
@@ -22,20 +21,9 @@ def validate_requester_example_image(
         else:
             raise ValueError(f"Not supported format for requester_question_example.")
     except RequestException as e:
-        raise ValidationError(
-            [
-                ErrorWrapper(ValueError(f"could not retrieve requester example ({uri_val})"), "answer_example_uri")
-            ],
-            ExampleResourceModel
-        ) from e
+        raise ValidationError(f"could not retrieve requester example ({uri_val})", ExampleResourceModel()) from e
     except ValidationError as e:
         raise ValidationError(
-            [
-                ErrorWrapper(
-                    ValueError(f"requester example image for {uri_val} has unsupported type"),
-                    "answer_example_uri"
-                )
-            ],
-            ExampleResourceModel
+            f"requester example image for {uri_val} has unsupported type", ExampleResourceModel()
         ) from e
 

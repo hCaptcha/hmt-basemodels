@@ -26,17 +26,17 @@ FAKE_ORACLE = "0x1413862c2b7054cdbfdc181b83962cb0fc11fd92"
 
 # A helper function for create manifest models based on model library
 def create_manifest(data: dict):
-    return basemodels.Manifest.construct(**data)
+    return basemodels.Manifest.model_construct(**data)
 
 
 # A helper function for create nested manifest models based on model library
 def create_nested_manifest(data: dict):
-    return basemodels.NestedManifest.construct(**data)
+    return basemodels.NestedManifest.model_construct(**data)
 
 
 # A helper function for create nested manifest models based on model library
 def create_webhook(data: dict):
-    return basemodels.Webhook.construct(**data)
+    return basemodels.Webhook.model_construct(**data)
 
 
 # Json serializer for models based on libraries
@@ -331,8 +331,8 @@ class ManifestTest(unittest.TestCase):
         """Test None fields are skipped in restricted audience"""
         restricted_audience = {"min_difficulty": 2}
 
-        self.assertEqual(RestrictedAudience(**restricted_audience).dict(), {"min_difficulty": 2})
-        self.assertEqual(RestrictedAudience(**restricted_audience).json(), '{"min_difficulty": 2}')
+        self.assertEqual(RestrictedAudience(**restricted_audience).dict(), {"min_difficulty":2})
+        self.assertEqual(RestrictedAudience(**restricted_audience).json(), '{"min_difficulty":2}')
 
     def test_restricted_audience_only(self):
         def assert_raises(data):
@@ -1046,7 +1046,7 @@ class TaskEntryTest(unittest.TestCase):
             TaskDataEntry(**taskdata)
 
         with self.assertRaises(ValidationError):
-            taskdata["datapoint_uri"] = "http://com"
+            taskdata["datapoint_uri"] = "http//com"
             TaskDataEntry(**taskdata)
 
         taskdata["datapoint_uri"] = "https://domain.com/file1.jpg"

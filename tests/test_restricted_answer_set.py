@@ -28,9 +28,9 @@ def create_manifest_from_test_method(nested_manifest: bool, data: dict):
     else:
         data.update(MANIFEST_VALUES)
     if nested_manifest:
-        return basemodels.NestedManifest.construct(**data)
+        return basemodels.NestedManifest.model_construct(**data)
     else:
-        return basemodels.Manifest.construct(**data)
+        return basemodels.Manifest.model_construct(**data)
 
 
 def validate_manifest_from_test_method(manifest):

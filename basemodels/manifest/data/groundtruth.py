@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 
 import requests
-from pydantic import BaseModel, HttpUrl, ValidationError, conlist, validator, root_validator, Field
+from pydantic import BaseModel, HttpUrl, ValidationError, ConfigDict
 from requests import RequestException
 from typing_extensions import Literal
 
@@ -10,10 +10,8 @@ from basemodels.constants import SUPPORTED_CONTENT_TYPES
 
 def create_wrapper_model(type):
     class WrapperModel(BaseModel):
-        data: Optional[type]
-
-        class Config:
-            arbitrary_types_allowed = True
+        model_config = ConfigDict(arbitrary_types_allowed=True)
+        data: Optional[type] = None
 
     return WrapperModel
 
@@ -55,7 +53,7 @@ ILMCGroundtruthEntryModel = create_wrapper_model(ilmc_groundtruth_entry_type)
 
 
 class ILASGroundtruthEntry(BaseModel):
-    entity_name: Optional[Union[int, float]]
+    entity_name: Optional[Union[int, float]] = None
     entity_type: str
     entity_coords: List[Union[int, float]]
 
@@ -77,6 +75,7 @@ Groundtruth file format for `image_label_area_select` job type
 """
 ilas_groundtruth_entry_type = List[List[ILASGroundtruthEntry]]
 ILASGroundtruthEntryModel = create_wrapper_model(ilas_groundtruth_entry_type)
+
 
 class TLMSSGroundTruthEntry(BaseModel):
     start: int
@@ -108,19 +107,20 @@ groundtruth_entry_models_map = {
     "text_label_multiple_span_select": TLMSSGroundTruthEntryModel,
 }
 
+
 def validate_content_type(uri: str) -> None:
     """Validate uri content type"""
     try:
         response = requests.head(uri)
         response.raise_for_status()
     except RequestException as e:
-        raise ValidationError(f"groundtruth content type ({uri}) validation failed", GroundtruthEntryKeyModel) from e
+        raise ValidationError(f"groundtruth content type ({uri}) validation failed", GroundtruthEntryKeyModel()) from e
 
     content_type = response.headers.get("Content-Type", "")
     if content_type not in SUPPORTED_CONTENT_TYPES:
         raise ValidationError(
             f"groundtruth entry has unsupported type {content_type}",
-            GroundtruthEntryKeyModel,
+            GroundtruthEntryKeyModel(),
         )
 
 

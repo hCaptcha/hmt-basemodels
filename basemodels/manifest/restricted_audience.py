@@ -1,7 +1,7 @@
 from enum import Enum
 from uuid import UUID
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, root_validator, ValidationError, conint, confloat, validator
+from pydantic import BaseModel, model_validator, conint, confloat, field_validator
 
 
 class RestrictedAudienceBrowserEnum(str, Enum):
@@ -20,21 +20,21 @@ class RestrictedAudienceScore(BaseModel):
 
 
 class RestrictedAudience(BaseModel):
-    lang: Optional[List[Dict[str, RestrictedAudienceScore]]]
-    country: Optional[List[Dict[str, RestrictedAudienceScore]]]
-    sitekey: Optional[List[Dict[str, RestrictedAudienceScore]]]
-    serverdomain: Optional[List[Dict[str, RestrictedAudienceScore]]]
-    browser: Optional[List[Dict[RestrictedAudienceBrowserEnum, RestrictedAudienceScore]]]
-    confidence: Optional[List[Dict[RestrictedAudienceConfidenceEnum, RestrictedAudienceScore]]]
-    reason: Optional[List[Dict[str, RestrictedAudienceScore]]]
-    roles: Optional[List[Dict[str, RestrictedAudienceScore]]]
+    lang: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
+    country: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
+    sitekey: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
+    serverdomain: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
+    browser: Optional[List[Dict[RestrictedAudienceBrowserEnum, RestrictedAudienceScore]]] = None
+    confidence: Optional[List[Dict[RestrictedAudienceConfidenceEnum, RestrictedAudienceScore]]] = None
+    reason: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
+    roles: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
 
-    min_difficulty: Optional[conint(ge=0, le=4, strict=True)]
-    min_user_score: Optional[confloat(ge=0, le=1)]
-    max_user_score: Optional[confloat(ge=0, le=1)]
+    min_difficulty: Optional[conint(ge=0, le=4, strict=True)] = None
+    min_user_score: Optional[confloat(ge=0, le=1)] = None
+    max_user_score: Optional[confloat(ge=0, le=1)] = None
 
-    launch_group_id: Optional[conint(ge=0, strict=True)]
-    interests: Optional[List[conint(strict=True)]]
+    launch_group_id: Optional[conint(ge=0, strict=True)] = None
+    interests: Optional[List[conint(strict=True)]] = None
 
     def dict(self, **kwargs):
         kwargs["exclude_unset"] = True
@@ -44,7 +44,7 @@ class RestrictedAudience(BaseModel):
         kwargs["exclude_unset"] = True
         return super().json(**kwargs)
 
-    @root_validator()
+    @model_validator(mode="before")
     def validate_score_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         for entry, value in values.items():
             if value is None:
@@ -60,7 +60,7 @@ class RestrictedAudience(BaseModel):
                                 raise ValueError("use lowercase")
         return values
 
-    @validator("sitekey")
+    @field_validator("sitekey")
     def validate_sitekey(cls, value):
         if value is not None:
             for restriction in value:
@@ -68,5 +68,5 @@ class RestrictedAudience(BaseModel):
                     try:
                         UUID(sitekey)
                     except:
-                        raise ValidationError("invalid sitekey")
+                        raise ValueError("invalid sitekey")
         return value
