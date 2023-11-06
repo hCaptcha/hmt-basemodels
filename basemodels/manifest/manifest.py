@@ -172,7 +172,7 @@ class NestedManifest(Model):
     validate_job_id = field_validator("job_id")(validate_uuid)
 
     request_type: BaseJobTypesEnum
-    validate_request_type = field_validator("request_type")(request_type_validator_func)
+    validate_request_type = field_validator("request_type", mode="before")(request_type_validator_func)
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]] = None
 
     @field_validator("requester_restricted_answer_set")
@@ -400,7 +400,7 @@ class Manifest(Model):
             raise ValueError("Lists are not allowed in this challenge type")
         return value
 
-    validate_request_type = field_validator("request_type")(RequestTypeValidator().validate)
+    validate_request_type = field_validator("request_type", mode="before")(RequestTypeValidator().validate)
     validate_job_api_key = field_validator("job_api_key")(validate_uuid)
     validate_job_id = field_validator("job_id")(validate_uuid)
 
