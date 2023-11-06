@@ -43,31 +43,19 @@ class BaseJobTypesEnum(str, Enum):
     multi_challenge = "multi_challenge"
 
 
-# Return a request type validator function
-class RequestTypeValidator:
-
-    multi_challenge: bool = True
-
-    def validate(cls, value, validation_info: ValidationInfo):
-        """
-        validate request types for all types of challenges
-        multi_challenge should always have multi_challenge_manifests
-        """
-        values = validation_info.data
-        if value == BaseJobTypesEnum.multi_challenge:
-            if not cls.multi_challenge:
-                raise ValueError("multi_challenge request is not allowed here.")
-            if "multi_challenge_manifests" not in values:
-                raise ValueError("multi_challenge requires multi_challenge_manifests.")
-        elif value in [BaseJobTypesEnum.image_label_multiple_choice, BaseJobTypesEnum.image_label_area_select]:
-            if values.get("multiple_choice_min_choices", 1) > values.get("multiple_choice_max_choices", 1):
-                raise ValueError("multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
-        return value
-
-
-request_type_validator = RequestTypeValidator()
-request_type_validator.multi_challenge = False
-request_type_validator_func = request_type_validator.validate
+def validate_request_type(cls, value, validation_info: ValidationInfo):
+    """
+    validate request types for all types of challenges
+    multi_challenge should always have multi_challenge_manifests
+    """
+    values = validation_info.data
+    if value == BaseJobTypesEnum.multi_challenge:
+        if "multi_challenge_manifests" not in values:
+            raise ValueError("multi_challenge requires multi_challenge_manifests.")
+    elif value in [BaseJobTypesEnum.image_label_multiple_choice, BaseJobTypesEnum.image_label_area_select]:
+        if values.get("multiple_choice_min_choices", 1) > values.get("multiple_choice_max_choices", 1):
+            raise ValueError("multiple_choice_min_choices cannot be greater than multiple_choice_max_choices")
+    return value
 
 
 # Shape types enum
@@ -172,7 +160,7 @@ class NestedManifest(Model):
     validate_job_id = field_validator("job_id")(validate_uuid)
 
     request_type: BaseJobTypesEnum
-    validate_request_type = field_validator("request_type", mode="before")(request_type_validator_func)
+    validate_request_type = field_validator("request_type", )(validate_request_type)
     requester_restricted_answer_set: Optional[Dict[str, Dict[str, str]]] = None
 
     @field_validator("requester_restricted_answer_set")
@@ -400,7 +388,7 @@ class Manifest(Model):
             raise ValueError("Lists are not allowed in this challenge type")
         return value
 
-    validate_request_type = field_validator("request_type", mode="before")(RequestTypeValidator().validate)
+    validate_request_type = field_validator("request_type")(validate_request_type)
     validate_job_api_key = field_validator("job_api_key")(validate_uuid)
     validate_job_id = field_validator("job_id")(validate_uuid)
 
