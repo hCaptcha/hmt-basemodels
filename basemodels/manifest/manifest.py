@@ -12,9 +12,9 @@ from .data.groundtruth import validate_groundtruth_entry
 from .data.requester_question_example import validate_requester_example_image
 from .data.requester_restricted_answer_set import validate_requester_restricted_answer_set_uris
 from .data.taskdata import validate_taskdata_entry
-from pydantic import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl, root_validator
-from pydantic.error_wrappers import ErrorWrapper
-from pydantic.fields import Field
+from pydantic.v1 import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl, root_validator
+from pydantic.v1.error_wrappers import ErrorWrapper
+from pydantic.v1.fields import Field
 from decimal import Decimal
 from basemodels.manifest.restricted_audience import RestrictedAudience
 from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION

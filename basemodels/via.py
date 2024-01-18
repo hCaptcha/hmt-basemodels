@@ -33,7 +33,7 @@ a job manifest. Each file takes the general form of:
 
 """
 from typing import Dict, List, Any, Optional, Union
-from pydantic import BaseModel, HttpUrl
+from pydantic.v1 import BaseModel, HttpUrl
 
 
 class RegionAttributesBaseModel(BaseModel):

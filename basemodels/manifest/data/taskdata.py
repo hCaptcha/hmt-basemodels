@@ -2,8 +2,8 @@ from typing import Dict, Optional, Union, Any
 from uuid import UUID
 
 import requests
-from pydantic import BaseModel, HttpUrl, validate_model, ValidationError, validator, root_validator
-from pydantic.error_wrappers import ErrorWrapper
+from pydantic.v1 import BaseModel, HttpUrl, validate_model, ValidationError, validator, root_validator
+from pydantic.v1.error_wrappers import ErrorWrapper
 from requests import RequestException
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES

@@ -10,7 +10,7 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.8"
 requests = "^2.31.0"
-pydantic = "^1.10.12"
+pydantic = "^2.5.3"
 
 [tool.poetry.dev-dependencies]
 httpretty = "^1.0.5"

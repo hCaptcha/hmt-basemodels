@@ -9,7 +9,7 @@ from typing import Any
 from uuid import uuid4
 
 import httpretty
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 
 import basemodels
 from basemodels.manifest.data.taskdata import TaskDataEntry

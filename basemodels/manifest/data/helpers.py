@@ -1,6 +1,6 @@
 import requests
-from pydantic import ValidationError, BaseModel, HttpUrl
-from pydantic.error_wrappers import ErrorWrapper
+from pydantic.v1 import ValidationError, BaseModel, HttpUrl
+from pydantic.v1.error_wrappers import ErrorWrapper
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
 

@@ -2,7 +2,7 @@ import unittest
 
 import basemodels
 
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 
 MANIFEST_VALUES = {
     "job_mode": "batch",

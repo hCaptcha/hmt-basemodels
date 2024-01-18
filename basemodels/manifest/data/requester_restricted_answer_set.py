@@ -1,6 +1,6 @@
-from pydantic.error_wrappers import ErrorWrapper
+from pydantic.v1.error_wrappers import ErrorWrapper
 from requests import RequestException
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 from .helpers import validate_content_type, ExampleResourceModel
 
 
