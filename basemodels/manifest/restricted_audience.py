@@ -1,7 +1,7 @@
 from enum import Enum
 from uuid import UUID
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, root_validator, ValidationError, conint, confloat, validator
+from pydantic.v1 import BaseModel, root_validator, ValidationError, conint, confloat, validator
 
 
 class RestrictedAudienceBrowserEnum(str, Enum):

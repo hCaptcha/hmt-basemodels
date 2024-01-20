@@ -45,7 +45,7 @@ mypy ./basemodels/__init__.py ./test.py --ignore-missing-imports
 Using the new model (based on pydantic library)
 ```python
 import basemodels
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 
 model = {
     'job_mode': 'batch',

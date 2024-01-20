@@ -1,6 +1,6 @@
 import enum
 import typing
-import pydantic
+import pydantic.v1 as pydantic
 
 
 class Pipeline(str, enum.Enum):

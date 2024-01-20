@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 
 import requests
-from pydantic import BaseModel, HttpUrl, ValidationError, conlist, validator, root_validator, Field
+from pydantic.v1 import BaseModel, HttpUrl, ValidationError, conlist, validator, root_validator, Field
 from requests import RequestException
 from typing_extensions import Literal
 
