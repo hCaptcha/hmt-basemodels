@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 from requests.exceptions import RequestException
 from typing_extensions import Literal
-from typing import Dict, Union, List, Optional, Any
+from typing import Dict, Union, List, Optional, Any, Tuple
 from enum import Enum
 from uuid import UUID, uuid4
 from .data.groundtruth import validate_groundtruth_entry
@@ -17,30 +17,12 @@ from pydantic.v1.error_wrappers import ErrorWrapper
 from pydantic.v1.fields import Field
 from decimal import Decimal
 from basemodels.manifest.restricted_audience import RestrictedAudience
-from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
+from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION, BaseJobTypesEnum
 
 
 # A validator function for UUID fields
 def validate_uuid(cls, value):
     return value or uuid.uuid4()
-
-
-# Base job types
-class BaseJobTypesEnum(str, Enum):
-    image_label_binary = "image_label_binary"
-    image_label_multiple_choice = "image_label_multiple_choice"
-    text_free_entry = "text_free_entry"
-    text_label_multiple_span_select = "text_label_multiple_span_select"
-    text_multiple_choice_one_option = "text_multiple_choice_one_option"
-    text_multiple_choice_multiple_options = "text_multiple_choice_multiple_options"
-    image_label_area_adjust = "image_label_area_adjust"
-    image_label_area_select = "image_label_area_select"
-    image_label_single_polygon = "image_label_single_polygon"
-    image_label_multiple_polygons = "image_label_multiple_polygons"
-    image_label_semantic_segmentation_one_option = "image_label_semantic_segmentation_one_option"
-    image_label_semantic_segmentation_multiple_options = "image_label_semantic_segmentation_multiple_options"
-    image_label_text = "image_label_text"
-    multi_challenge = "multi_challenge"
 
 
 # Return a request type validator function
@@ -100,13 +82,22 @@ class Webhook(Model):
     # job_activated : List[str] = None
 
 
+class Draggable(BaseModel):
+    """Draggable configuration"""
+    draggable_id: UUID
+    draggable_uri: AnyHttpUrl
+    start_loc_xy: Tuple[int, int]
+
+
 class TaskData(BaseModel):
     """objects within taskdata list in Manifest"""
 
     task_key: UUID
     datapoint_uri: Optional[AnyHttpUrl]
+    background_uri: Optional[AnyHttpUrl]
+    draggables: Optional[List[Draggable]]
     datapoint_text: Optional[Dict[str, str]]
-    datapoint_hash: str = Field(..., min_length=10, strip_whitespace=True)
+    datapoint_hash: Optional[str] = Field(..., min_length=10, strip_whitespace=True)
 
     @validator("datapoint_uri", always=True)
     def validate_datapoint_uri(cls, value):
@@ -115,14 +106,18 @@ class TaskData(BaseModel):
         return value
 
     @root_validator
-    def validate_datapoint_text(cls, values):
+    def validate_task_data(cls, values):
         """
         Validate datapoint_uri.
 
         Raise error if no datapoint_text and no value for URI.
         """
-        if not values.get("datapoint_uri") and not values.get("datapoint_text"):
+        if not values.get("datapoint_uri") and not values.get("datapoint_text") and not values.get("background_uri"):
             raise ValueError("datapoint_uri is missing.")
+        if values.get("background_uri") and not values.get("draggables"):
+            raise ValueError("draggables are missing.")
+        if values.get("draggables") and not values.get("background_uri"):
+            raise ValueError("background_uri are missing.")
         return values
 
 

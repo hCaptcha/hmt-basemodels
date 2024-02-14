@@ -1,17 +1,19 @@
-from typing import Dict, Optional, Union, Any
+from typing import Dict, Optional, Union, Any, List, Tuple
 from uuid import UUID
 
 import requests
-from pydantic.v1 import BaseModel, HttpUrl, validate_model, ValidationError, validator, root_validator
+from pydantic.v1 import HttpUrl, validate_model, ValidationError, validator, BaseModel, root_validator, AnyHttpUrl
 from pydantic.v1.error_wrappers import ErrorWrapper
 from requests import RequestException
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
 
 
-# New type
-class AtLeastTenCharUrl(HttpUrl):
-    min_length = 10
+class Draggable(BaseModel):
+    """Draggable configuration"""
+    draggable_uri: AnyHttpUrl
+    draggable_id: UUID
+    start_loc_xy: Tuple[int, int]
 
 
 class TaskDataEntry(BaseModel):
@@ -36,13 +38,32 @@ class TaskDataEntry(BaseModel):
 
     task_key: Optional[UUID]
     datapoint_uri: Optional[HttpUrl]
+    background_uri: Optional[HttpUrl]
+    draggables: Optional[List[Draggable]]
     datapoint_text: Optional[Dict[str, str]]
+    datapoint_hash: Optional[str]
+    metadata: Optional[Dict[str, Optional[Union[str, int, float, Dict[str, Any]]]]]
 
     @validator("datapoint_uri", always=True)
     def validate_datapoint_uri(cls, value):
         if value and len(value) < 10:
-            raise ValidationError("datapoint_uri need to be at least 10 char length.")
+            raise ValueError("datapoint_uri need to be at least 10 char length.")
         return value
+
+    @root_validator
+    def validate_task_data(cls, values):
+        """
+        Validate datapoint_uri.
+
+        Raise error if no datapoint_text and no value for URI.
+        """
+        if not values.get("datapoint_uri") and not values.get("datapoint_text") and not values.get("background_uri"):
+            raise ValueError(f"datapoint_uri is missing. {list(values.keys())}")
+        if values.get("background_uri") and not values.get("draggables"):
+            raise ValueError("draggables are missing.")
+        if values.get("draggables") and not values.get("background_uri"):
+            raise ValueError("background_uri are missing.")
+        return values
 
     @validator("metadata")
     def validate_metadata(cls, value):
@@ -56,20 +77,6 @@ class TaskDataEntry(BaseModel):
             raise ValidationError("metadata should be < 1024")
 
         return value
-
-    datapoint_hash: Optional[str]
-    metadata: Optional[Dict[str, Optional[Union[str, int, float, Dict[str, Any]]]]]
-
-    @root_validator
-    def validate_datapoint_text(cls, values):
-        """
-        Validate datapoint_uri.
-
-        Raise error if no datapoint_text and no value for URI.
-        """
-        if not values.get("datapoint_uri") and not values.get("datapoint_text"):
-            raise ValueError("datapoint_uri is missing.")
-        return values
 
 
 def validate_content_type(uri: str) -> None:
@@ -102,9 +109,11 @@ def validate_taskdata_entry(value: dict, validate_image_content_type: bool) -> N
     """Validate taskdata entry"""
     if not isinstance(value, dict):
         raise ValidationError("taskdata entry should be dict", TaskDataEntry())
-
+    print("HERE")
+    print(value)
     *_, validation_error = validate_model(TaskDataEntry, value)
     if validation_error:
+        print(validation_error)
         raise validation_error
 
     if validate_image_content_type:
