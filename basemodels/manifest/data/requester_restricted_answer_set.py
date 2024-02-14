@@ -27,20 +27,21 @@ def validate_requester_restricted_answer_set_uris(restricted_answer_set: dict) -
                 [
                     ErrorWrapper(
                         ValueError(f"could not retrieve requester restricted answer set example uri ({uri})"),
-                        "answer_example_uri"
+                        "answer_example_uri",
                     )
                 ],
-                ExampleResourceModel
+                ExampleResourceModel,
             ) from e
         except ValidationError as e:
 
             raise ValidationError(
                 [
                     ErrorWrapper(
-                        ValueError(f"requester restricted answer set example uri "
-                                   f"({uri}) content type failed validation"),
-                        "answer_example_uri"
+                        ValueError(
+                            f"requester restricted answer set example uri " f"({uri}) content type failed validation"
+                        ),
+                        "answer_example_uri",
                     )
                 ],
-                ExampleResourceModel
+                ExampleResourceModel,
             ) from e

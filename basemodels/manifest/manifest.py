@@ -5,42 +5,24 @@ from datetime import datetime
 import requests
 from requests.exceptions import RequestException
 from typing_extensions import Literal
-from typing import Dict, Union, List, Optional, Any
+from typing import Any, Dict, List, Optional, Union
 from enum import Enum
 from uuid import UUID, uuid4
 from .data.groundtruth import validate_groundtruth_entry
 from .data.requester_question_example import validate_requester_example_image
 from .data.requester_restricted_answer_set import validate_requester_restricted_answer_set_uris
-from .data.taskdata import validate_taskdata_entry
+from .data.taskdata import validate_taskdata_entry, Entity
 from pydantic.v1 import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl, root_validator
 from pydantic.v1.error_wrappers import ErrorWrapper
 from pydantic.v1.fields import Field
 from decimal import Decimal
 from basemodels.manifest.restricted_audience import RestrictedAudience
-from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION
+from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION, BaseJobTypesEnum
 
 
 # A validator function for UUID fields
 def validate_uuid(cls, value):
     return value or uuid.uuid4()
-
-
-# Base job types
-class BaseJobTypesEnum(str, Enum):
-    image_label_binary = "image_label_binary"
-    image_label_multiple_choice = "image_label_multiple_choice"
-    text_free_entry = "text_free_entry"
-    text_label_multiple_span_select = "text_label_multiple_span_select"
-    text_multiple_choice_one_option = "text_multiple_choice_one_option"
-    text_multiple_choice_multiple_options = "text_multiple_choice_multiple_options"
-    image_label_area_adjust = "image_label_area_adjust"
-    image_label_area_select = "image_label_area_select"
-    image_label_single_polygon = "image_label_single_polygon"
-    image_label_multiple_polygons = "image_label_multiple_polygons"
-    image_label_semantic_segmentation_one_option = "image_label_semantic_segmentation_one_option"
-    image_label_semantic_segmentation_multiple_options = "image_label_semantic_segmentation_multiple_options"
-    image_label_text = "image_label_text"
-    multi_challenge = "multi_challenge"
 
 
 # Return a request type validator function
@@ -105,8 +87,10 @@ class TaskData(BaseModel):
 
     task_key: UUID
     datapoint_uri: Optional[AnyHttpUrl]
+    entities: Optional[List[Entity]]
+    polygon: Optional[List[int]]
     datapoint_text: Optional[Dict[str, str]]
-    datapoint_hash: str = Field(..., min_length=10, strip_whitespace=True)
+    datapoint_hash: Optional[str] = Field(..., min_length=10, strip_whitespace=True)
 
     @validator("datapoint_uri", always=True)
     def validate_datapoint_uri(cls, value):
@@ -115,7 +99,7 @@ class TaskData(BaseModel):
         return value
 
     @root_validator
-    def validate_datapoint_text(cls, values):
+    def validate_task_data(cls, values):
         """
         Validate datapoint_uri.
 
@@ -148,6 +132,7 @@ class RequestConfig(Model):
     sig_figs: Optional[int]
     keep_answers_order: Optional[bool]
     ignore_case: Optional[bool] = False
+    enable_hold_time: Optional[bool] = False
 
 
 class InternalConfig(Model):
@@ -315,7 +300,7 @@ class Manifest(Model):
 
     is_verification: bool = False
 
-    ##### Validators
+    # #### Validators
 
     @root_validator
     def validate(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -440,19 +425,11 @@ def validate_groundtruth_uri(manifest: dict):
 
     except (ValidationError, RequestException) as e:
         raise ValidationError(
-            [
-                ErrorWrapper(ValueError(f"Validation failed for {uri}: {e}"), uri_key)
-            ],
-            Manifest
+            [ErrorWrapper(ValueError(f"Validation failed for {uri}: {e}"), uri_key)], Manifest
         ) from e
 
     if entries_count == 0:
-        raise ValidationError(
-            [
-                ErrorWrapper(ValueError(f"fetched {uri} is empty"), uri_key)
-            ],
-            Manifest
-        )
+        raise ValidationError([ErrorWrapper(ValueError(f"fetched {uri} is empty"), uri_key)], Manifest)
 
 
 def validate_taskdata_uri(manifest: dict):
@@ -479,19 +456,11 @@ def validate_taskdata_uri(manifest: dict):
 
     except (ValidationError, RequestException) as e:
         raise ValidationError(
-            [
-                ErrorWrapper(ValueError(f"Validation failed for {uri}: {e}"), uri_key)
-            ],
-            Manifest
+            [ErrorWrapper(ValueError(f"Validation failed for {uri}: {e}"), uri_key)], Manifest
         ) from e
 
     if entries_count == 0:
-        raise ValidationError(
-            [
-                ErrorWrapper(ValueError(f"fetched {uri} is empty"), uri_key)
-            ],
-            Manifest
-        )
+        raise ValidationError([ErrorWrapper(ValueError(f"fetched {uri} is empty"), uri_key)], Manifest)
 
 
 def validate_manifest_example_images(manifest: dict):

@@ -56,29 +56,17 @@ class TestILMCRequesterRestrictedAnswerSet(unittest.TestCase):
                 validate_manifest_from_test_method(m)
 
     def test_one_option(self):
-        self.check_rsa_validation(
-            rsa={"one": {"en": "one"}},
-            should_pass=False
-        )
+        self.check_rsa_validation(rsa={"one": {"en": "one"}}, should_pass=False)
 
     def test_one_option_nested(self):
-        self.check_rsa_validation(
-            rsa={"one": {"en": "one"}},
-            should_pass=False,
-            nested_manifest=True
-        )
+        self.check_rsa_validation(rsa={"one": {"en": "one"}}, should_pass=False, nested_manifest=True)
 
     def test_two_options(self):
-        self.check_rsa_validation(
-            rsa={"one": {"en": "one"}, "two": {"en": "two"}},
-            should_pass=True
-        )
+        self.check_rsa_validation(rsa={"one": {"en": "one"}, "two": {"en": "two"}}, should_pass=True)
 
     def test_two_options_nested(self):
         self.check_rsa_validation(
-            rsa={"one": {"en": "one"}, "two": {"en": "two"}},
-            should_pass=True,
-            nested_manifest=True
+            rsa={"one": {"en": "one"}, "two": {"en": "two"}}, should_pass=True, nested_manifest=True
         )
 
     def test_five_options(self):
@@ -88,9 +76,9 @@ class TestILMCRequesterRestrictedAnswerSet(unittest.TestCase):
                 "two": {"en": "two"},
                 "three": {"en": "three"},
                 "four": {"en": "four"},
-                "five": {"en": "five"}
+                "five": {"en": "five"},
             },
-            should_pass=False
+            should_pass=False,
         )
 
     def test_five_options_nested(self):
@@ -100,8 +88,8 @@ class TestILMCRequesterRestrictedAnswerSet(unittest.TestCase):
                 "two": {"en": "two"},
                 "three": {"en": "three"},
                 "four": {"en": "four"},
-                "five": {"en": "five"}
+                "five": {"en": "five"},
             },
             should_pass=False,
-            nested_manifest=True
+            nested_manifest=True,
         )
