@@ -83,7 +83,7 @@ ILASGroundtruthEntryModel = create_wrapper_model(ilas_groundtruth_entry_type)
 class IDDGroundtruthEntry(BaseModel):
     entity_name: UUID
     entity_type: Optional[str]
-    entity_coords: Tuple[int, int]
+    entity_coords: List[int]
 
 
 """
