@@ -9,10 +9,10 @@ from requests import RequestException
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
 
 
-class Draggable(BaseModel):
-    """Draggable configuration"""
-    draggable_uri: AnyHttpUrl
-    draggable_id: UUID
+class Entity(BaseModel):
+    """Entity configuration"""
+    entity_id: UUID
+    entity_uri: AnyHttpUrl
     start_loc_xy: Tuple[int, int]
 
 
@@ -38,8 +38,7 @@ class TaskDataEntry(BaseModel):
 
     task_key: Optional[UUID]
     datapoint_uri: Optional[HttpUrl]
-    background_uri: Optional[HttpUrl]
-    draggables: Optional[List[Draggable]]
+    entities: Optional[List[Entity]]
     datapoint_text: Optional[Dict[str, str]]
     datapoint_hash: Optional[str]
     metadata: Optional[Dict[str, Optional[Union[str, int, float, Dict[str, Any]]]]]
@@ -57,12 +56,8 @@ class TaskDataEntry(BaseModel):
 
         Raise error if no datapoint_text and no value for URI.
         """
-        if not values.get("datapoint_uri") and not values.get("datapoint_text") and not values.get("background_uri"):
+        if not values.get("datapoint_uri") and not values.get("datapoint_text"):
             raise ValueError(f"datapoint_uri is missing. {list(values.keys())}")
-        if values.get("background_uri") and not values.get("draggables"):
-            raise ValueError("draggables are missing.")
-        if values.get("draggables") and not values.get("background_uri"):
-            raise ValueError("background_uri are missing.")
         return values
 
     @validator("metadata")

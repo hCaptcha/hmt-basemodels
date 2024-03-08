@@ -11,7 +11,7 @@ from uuid import UUID, uuid4
 from .data.groundtruth import validate_groundtruth_entry
 from .data.requester_question_example import validate_requester_example_image
 from .data.requester_restricted_answer_set import validate_requester_restricted_answer_set_uris
-from .data.taskdata import validate_taskdata_entry
+from .data.taskdata import validate_taskdata_entry, Entity
 from pydantic.v1 import BaseModel, validator, ValidationError, validate_model, HttpUrl, AnyHttpUrl, root_validator
 from pydantic.v1.error_wrappers import ErrorWrapper
 from pydantic.v1.fields import Field
@@ -82,20 +82,12 @@ class Webhook(Model):
     # job_activated : List[str] = None
 
 
-class Draggable(BaseModel):
-    """Draggable configuration"""
-    draggable_id: UUID
-    draggable_uri: AnyHttpUrl
-    start_loc_xy: Tuple[int, int]
-
-
 class TaskData(BaseModel):
     """objects within taskdata list in Manifest"""
 
     task_key: UUID
     datapoint_uri: Optional[AnyHttpUrl]
-    background_uri: Optional[AnyHttpUrl]
-    draggables: Optional[List[Draggable]]
+    entities: Optional[List[Entity]]
     datapoint_text: Optional[Dict[str, str]]
     datapoint_hash: Optional[str] = Field(..., min_length=10, strip_whitespace=True)
 
@@ -112,12 +104,8 @@ class TaskData(BaseModel):
 
         Raise error if no datapoint_text and no value for URI.
         """
-        if not values.get("datapoint_uri") and not values.get("datapoint_text") and not values.get("background_uri"):
+        if not values.get("datapoint_uri") and not values.get("datapoint_text"):
             raise ValueError("datapoint_uri is missing.")
-        if values.get("background_uri") and not values.get("draggables"):
-            raise ValueError("draggables are missing.")
-        if values.get("draggables") and not values.get("background_uri"):
-            raise ValueError("background_uri are missing.")
         return values
 
 
@@ -143,6 +131,7 @@ class RequestConfig(Model):
     sig_figs: Optional[int]
     keep_answers_order: Optional[bool]
     ignore_case: Optional[bool] = False
+    enable_hold_time: Optional[bool] = False
 
 
 class InternalConfig(Model):
@@ -309,8 +298,9 @@ class Manifest(Model):
     rejected_count: Optional[int]
 
     is_verification: bool = False
+    polygon = Tuple[int, int]
 
-    ##### Validators
+    # #### Validators
 
     @root_validator
     def validate(cls, values: Dict[str, Any]) -> Dict[str, Any]:
