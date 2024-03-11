@@ -298,7 +298,7 @@ class Manifest(Model):
     rejected_count: Optional[int]
 
     is_verification: bool = False
-    polygon = Tuple[int, int]
+    polygon: Optional[Tuple[int, int]]
 
     # #### Validators
 
