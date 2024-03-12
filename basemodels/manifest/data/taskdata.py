@@ -13,7 +13,7 @@ class Entity(BaseModel):
     """Entity configuration"""
     entity_id: UUID
     entity_uri: AnyHttpUrl
-    start_loc_xy: Tuple[int, int]
+    coords: Tuple[int, int]
 
 
 class TaskDataEntry(BaseModel):

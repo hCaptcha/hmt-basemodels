@@ -88,6 +88,7 @@ class TaskData(BaseModel):
     task_key: UUID
     datapoint_uri: Optional[AnyHttpUrl]
     entities: Optional[List[Entity]]
+    polygon: Optional[List[int]]
     datapoint_text: Optional[Dict[str, str]]
     datapoint_hash: Optional[str] = Field(..., min_length=10, strip_whitespace=True)
 
@@ -298,7 +299,6 @@ class Manifest(Model):
     rejected_count: Optional[int]
 
     is_verification: bool = False
-    polygon: Optional[Tuple[int, int]]
 
     # #### Validators
 
