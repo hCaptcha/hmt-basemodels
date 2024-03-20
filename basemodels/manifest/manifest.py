@@ -422,7 +422,7 @@ def validate_groundtruth_uri(manifest: dict):
     if uri is None:
         return
     try:
-        response = requests.get(uri, timeout=1)
+        response = requests.get(uri, timeout=(3.5, 5))
         response.raise_for_status()
 
         entries_count = 0
@@ -467,7 +467,7 @@ def validate_taskdata_uri(manifest: dict):
     if uri is None:
         return
     try:
-        response = requests.get(uri, timeout=1)
+        response = requests.get(uri, timeout=(3.5, 5))
         response.raise_for_status()
 
         entries_count = 0

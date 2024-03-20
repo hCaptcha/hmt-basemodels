@@ -111,7 +111,7 @@ groundtruth_entry_models_map = {
 def validate_content_type(uri: str) -> None:
     """Validate uri content type"""
     try:
-        response = requests.head(uri)
+        response = requests.head(uri, timeout=(3.5, 5))
         response.raise_for_status()
     except RequestException as e:
         raise ValidationError(f"groundtruth content type ({uri}) validation failed", GroundtruthEntryKeyModel) from e
