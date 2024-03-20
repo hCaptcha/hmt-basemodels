@@ -8,7 +8,7 @@ RUN apt-get update -y && \
 
 ENV LANG C.UTF-8
 
-RUN pip install poetry
+RUN pip install poetry==1.8.2
 
 COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false && poetry install -n --no-root
