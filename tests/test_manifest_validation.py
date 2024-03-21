@@ -56,16 +56,16 @@ test_models = basemodels
 
 
 def get_data(
-        number_of_tasks=100,
-        bid_amount=1.0,
-        oracle_stake=0.05,
-        expiration_date=0,
-        minimum_trust=0.1,
-        request_type=IMAGE_LABEL_BINARY,
-        request_config=None,
-        job_mode="batch",
-        multi_challenge_manifests=None,
-        is_verification=None,
+    number_of_tasks=100,
+    bid_amount=1.0,
+    oracle_stake=0.05,
+    expiration_date=0,
+    minimum_trust=0.1,
+    request_type=IMAGE_LABEL_BINARY,
+    request_config=None,
+    job_mode="batch",
+    multi_challenge_manifests=None,
+    is_verification=None,
 ) -> dict:
     internal_config = {"exchange": {"a": 1, "b": "c"}}
     model = {
@@ -169,7 +169,7 @@ TASK = {
         "key_2": "value_2",
         "key_3": {
             "inner_key_1": "inner_value_1",
-        }
+        },
     },
 }
 
@@ -424,11 +424,7 @@ class ManifestTest(unittest.TestCase):
         ]:
             assert_raises(data)
 
-        for data in [
-                {"interests": 1},
-                {"interests": {"mapped": 1}},
-                {"interests": ["as", "string"]}
-        ]:
+        for data in [{"interests": 1}, {"interests": {"mapped": 1}}, {"interests": ["as", "string"]}]:
             assert_raises(data)
 
         data = {
@@ -451,7 +447,7 @@ class ManifestTest(unittest.TestCase):
             "min_user_score": 0,
             "max_user_score": 0.3,
             "launch_group_id": 101,
-            "interests": [1,2,3,4],
+            "interests": [1, 2, 3, 4],
         }
 
         RestrictedAudience(**data)
@@ -613,7 +609,10 @@ class ManifestTest(unittest.TestCase):
         del manifest["requester_question_example"]
         validate_func(create_manifest(manifest))()
 
-        manifest["requester_example_extra_fields"] = {"answer_example_uri": FAKE_URL, "answer_example_coords": "coords"}
+        manifest["requester_example_extra_fields"] = {
+            "answer_example_uri": FAKE_URL,
+            "answer_example_coords": "coords",
+        }
         manifest["request_type"] = "image_label_area_select"
         validate_func(create_manifest(manifest))()
 
@@ -812,38 +811,34 @@ class TestValidateManifestUris(unittest.TestCase):
         groundtruth_uri = "https://domain.com/file1.txt"
         body = {
             groundtruth_uri: [
-              {"start": 0, "end": 4, "label": "0"},
-              {"start": 17, "end": 89, "label": "1"},
+                {"start": 0, "end": 4, "label": "0"},
+                {"start": 17, "end": 89, "label": "1"},
             ]
         }
         self.register_http_response(groundtruth_uri, method=httpretty.HEAD, headers={"Content-Type": "text/plain"})
         self.validate_groundtruth_response("text_label_multiple_span_select", body)
 
-
     def test_groundtruth_uri_tlmss_invalid_key(self):
         body = {
             "not_uri": [
-              {"start": 0, "end": 4, "label": "0"},
-              {"start": 17, "end": 89, "label": "1"},
+                {"start": 0, "end": 4, "label": "0"},
+                {"start": 17, "end": 89, "label": "1"},
             ]
         }
 
         with self.assertRaises(ValidationError):
             self.validate_groundtruth_response("text_label_multiple_span_select", body)
-
 
     def test_groundtruth_uri_tlmss_invalid_value(self):
         body = {
             "https://www.domain.com/file1.txt": [
-              {"span": [0, 4]},
-              {"span": [17, 89], "label": "1"},
+                {"span": [0, 4]},
+                {"span": [17, 89], "label": "1"},
             ]
         }
 
         with self.assertRaises(ValidationError):
             self.validate_groundtruth_response("text_label_multiple_span_select", body)
-
-
 
     def test_groundtruth_uri_ilas_invalid_value(self):
         body = {"https://domain.com/file1.jpeg": [[True]]}
@@ -972,15 +967,9 @@ class TestValidateManifestUris(unittest.TestCase):
         manifest = {
             "requester_question_example": first_uri,
             "requester_restricted_answer_set": {
-                "0": {
-                    "answer_example_uri": second_uri,
-                    "en": "Test en2"
-                },
-                "1": {
-                    "answer_example_uri": third_uri,
-                    "en": "Test en3"
-                },
-            }
+                "0": {"answer_example_uri": second_uri, "en": "Test en2"},
+                "1": {"answer_example_uri": third_uri, "en": "Test en3"},
+            },
         }
         self.register_http_response(first_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
         self.register_http_response(second_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
@@ -997,15 +986,9 @@ class TestValidateManifestUris(unittest.TestCase):
         manifest = {
             "requester_question_example": first_uri,
             "requester_restricted_answer_set": {
-                "0": {
-                    "answer_example_uri": second_uri,
-                    "en": "Test en2"
-                },
-                "1": {
-                    "answer_example_uri": third_uri,
-                    "en": "Test en3"
-                },
-            }
+                "0": {"answer_example_uri": second_uri, "en": "Test en2"},
+                "1": {"answer_example_uri": third_uri, "en": "Test en3"},
+            },
         }
         self.register_http_response(first_uri, method=httpretty.HEAD, headers={"Content-Type": "image/html"})
         self.register_http_response(second_uri, method=httpretty.HEAD, headers={"Content-Type": "image/html"})

@@ -16,8 +16,5 @@ def validate_content_type(uri: str) -> None:
     content_type = response.headers.get("Content-Type", "")
     if content_type not in SUPPORTED_CONTENT_TYPES:
         raise ValidationError(
-            [
-                ErrorWrapper(ValueError(f"Unsupported type {content_type}"), "answer_example_uri")
-            ],
-            ExampleResourceModel
+            [ErrorWrapper(ValueError(f"Unsupported type {content_type}"), "answer_example_uri")], ExampleResourceModel
         )
