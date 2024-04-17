@@ -9,7 +9,7 @@ from typing import Any
 from uuid import uuid4
 
 import httpretty
-from pydantic.v1 import ValidationError
+from pydantic import ValidationError
 
 import basemodels
 from basemodels.manifest.data.taskdata import TaskDataEntry
@@ -26,17 +26,17 @@ FAKE_ORACLE = "0x1413862c2b7054cdbfdc181b83962cb0fc11fd92"
 
 # A helper function for create manifest models based on model library
 def create_manifest(data: dict):
-    return basemodels.Manifest.construct(**data)
+    return basemodels.Manifest.model_construct(**data)
 
 
 # A helper function for create nested manifest models based on model library
 def create_nested_manifest(data: dict):
-    return basemodels.NestedManifest.construct(**data)
+    return basemodels.NestedManifest.model_construct(**data)
 
 
 # A helper function for create nested manifest models based on model library
 def create_webhook(data: dict):
-    return basemodels.Webhook.construct(**data)
+    return basemodels.Webhook.model_construct(**data)
 
 
 # Json serializer for models based on libraries
@@ -205,7 +205,7 @@ class ManifestTest(unittest.TestCase):
 
     def test_can_make_request_config_job(self):
         """Test that jobs with valid request_config parameter work"""
-        manifest = a_manifest(
+        a_manifest(
             request_type="image_label_area_select",
             request_config={"shape_type": "point", "overlap_threshold": 0.8},
         )
@@ -217,7 +217,7 @@ class ManifestTest(unittest.TestCase):
             request_config={"shape_type": "point"},
         )
 
-        manifest = a_manifest(request_type="multi_challenge", multi_challenge_manifests=[nested_manifest])
+        a_manifest(request_type="multi_challenge", multi_challenge_manifests=[nested_manifest])
 
     def test_can_make_nested_request_config_job_multiple_nest(self):
         """Test that jobs with multiple valid nested request_config parameters work"""
@@ -231,7 +231,7 @@ class ManifestTest(unittest.TestCase):
             request_config={"shape_type": "point"},
         )
 
-        manifest = a_manifest(
+        a_manifest(
             request_type="multi_challenge",
             multi_challenge_manifests=[nested_manifest, nested_manifest_2],
         )
@@ -331,8 +331,8 @@ class ManifestTest(unittest.TestCase):
         """Test None fields are skipped in restricted audience"""
         restricted_audience = {"min_difficulty": 2}
 
-        self.assertEqual(RestrictedAudience(**restricted_audience).dict(), {"min_difficulty": 2})
-        self.assertEqual(RestrictedAudience(**restricted_audience).json(), '{"min_difficulty": 2}')
+        self.assertEqual(RestrictedAudience(**restricted_audience).dict(), {"min_difficulty":2})
+        self.assertEqual(RestrictedAudience(**restricted_audience).json(), '{"min_difficulty":2}')
 
     def test_restricted_audience_only(self):
         def assert_raises(data):
@@ -524,7 +524,6 @@ class ManifestTest(unittest.TestCase):
         }
 
         model = create_manifest(obj)
-        # print(model.to_primitive())
         self.assertTrue(validate_func(model)() is None)
 
     def test_both_timestamps_are_required(self):
@@ -1029,7 +1028,7 @@ class TaskEntryTest(unittest.TestCase):
             TaskDataEntry(**taskdata)
 
         with self.assertRaises(ValidationError):
-            taskdata["datapoint_uri"] = "http://com"
+            taskdata["datapoint_uri"] = "http//com"
             TaskDataEntry(**taskdata)
 
         taskdata["datapoint_uri"] = "https://domain.com/file1.jpg"
