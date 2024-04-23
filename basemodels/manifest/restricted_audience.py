@@ -38,11 +38,11 @@ class RestrictedAudience(BaseModel):
 
     def dict(self, **kwargs):
         kwargs["exclude_unset"] = True
-        return super().dict(**kwargs)
+        return super().model_dump(**kwargs)
 
     def json(self, **kwargs):
         kwargs["exclude_unset"] = True
-        return super().json(**kwargs)
+        return super().model_dump_json(**kwargs)
 
     @model_validator(mode="before")
     def validate_score_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
