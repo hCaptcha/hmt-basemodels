@@ -254,7 +254,7 @@ class Manifest(Model):
 
     unsafe_content: bool = False
     task_bid_price: float
-    oracle_stake: Decimal
+    oracle_stake: float
     expiration_date: Optional[int] = None
     start_date: Optional[int] = None
     requester_accuracy_target: float = 0.1
