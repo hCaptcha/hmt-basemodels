@@ -56,7 +56,7 @@ class ShapeTypes(str, Enum):
 
 class Model(BaseModel):
     def to_primitive(self):
-        return self.model_dump(exclude_none=True)
+        return self.model_dump()
 
     def check(self, return_new=False):
         validated_obj = self.__class__.model_validate(self.model_dump())
@@ -394,8 +394,10 @@ class Manifest(Model):
 
     def to_primitive(self):
         """Override primitive function to make it serializable."""
-        manifest_json = self.model_dump_json(exclude_none=True)
-        return json.loads(manifest_json)
+        d = json.loads(self.model_dump_json())
+        if isinstance(self.restricted_audience, RestrictedAudience):
+            d["restricted_audience"] = self.restricted_audience.to_primitive()
+        return d
 
 
 def validate_groundtruth_uri(manifest: dict):

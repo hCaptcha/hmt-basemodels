@@ -43,7 +43,7 @@ def create_webhook(data: dict):
 def to_json(model):
 
     # Pydantic json serializer
-    return model.json()
+    return model.model_dump_json()
 
 
 # A helper function for providing validatation function based on libraries

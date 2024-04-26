@@ -1,7 +1,13 @@
 from enum import Enum
 from uuid import UUID
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, model_validator, conint, confloat, field_validator
+from pydantic import (
+    BaseModel,
+    conint,
+    confloat,
+    field_validator,
+    model_validator,
+)
 
 
 class RestrictedAudienceBrowserEnum(str, Enum):
@@ -38,11 +44,15 @@ class RestrictedAudience(BaseModel):
 
     def dict(self, **kwargs):
         kwargs["exclude_unset"] = True
-        return super().model_dump(exclude_unset = True, **kwargs)
+        return super().model_dump(**kwargs)
 
     def json(self, **kwargs):
         kwargs["exclude_unset"] = True
-        return super().model_dump_json(exclude_unset = True, **kwargs)
+        return super().model_dump_json(**kwargs)
+
+    def to_primitive(self, **kwargs):
+        kwargs["exclude_unset"] = True
+        return self.model_dump(**kwargs)
 
     @model_validator(mode="before")
     def validate_score_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
