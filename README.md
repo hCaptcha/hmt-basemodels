@@ -60,7 +60,7 @@ try:
 except ValidationError as e:
    print(e.json())
 # Or creating model without validation
-manifest = basemodels.Manifest.construct(**model)
+manifest = basemodels.Manifest.model_construct(**model)
 # See https://pydantic-docs.helpmanual.io/usage/models/#creating-models-without-validation
 ```
 ## Note for maintainers: Deploying to PyPi

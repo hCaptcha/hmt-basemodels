@@ -1,6 +1,6 @@
 import enum
 import typing
-import pydantic.v1 as pydantic
+from pydantic import BaseModel
 
 
 class Pipeline(str, enum.Enum):
@@ -9,9 +9,9 @@ class Pipeline(str, enum.Enum):
     UploadPipeline = "UploadPipeline"
 
 
-class Preprocess(pydantic.BaseModel):
+class Preprocess(BaseModel):
     pipeline: Pipeline
-    config: typing.Optional[dict]
+    config: typing.Optional[dict] = None
 
     def to_dict(self):
         p = {"pipeline": self.pipeline.value}

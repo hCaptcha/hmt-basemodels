@@ -2,7 +2,7 @@ import unittest
 
 import basemodels
 
-from pydantic.v1 import ValidationError
+from pydantic import ValidationError
 
 MANIFEST_VALUES = {
     "job_mode": "batch",
@@ -28,9 +28,9 @@ def create_manifest_from_test_method(nested_manifest: bool, data: dict):
     else:
         data.update(MANIFEST_VALUES)
     if nested_manifest:
-        return basemodels.NestedManifest.construct(**data)
+        return basemodels.NestedManifest.model_construct(**data)
     else:
-        return basemodels.Manifest.construct(**data)
+        return basemodels.Manifest.model_construct(**data)
 
 
 def validate_manifest_from_test_method(manifest):
@@ -47,7 +47,12 @@ class TestILMCRequesterRestrictedAnswerSet(unittest.TestCase):
     """
 
     def check_rsa_validation(self, rsa: dict, should_pass: bool, nested_manifest: bool = False):
-        data = {"requester_restricted_answer_set": rsa}
+        data = {
+            "requester_question": {
+                "en": "Requester question",
+            },
+            "requester_restricted_answer_set": rsa,
+        }
         m = create_manifest_from_test_method(nested_manifest, data)
         if should_pass:
             validate_manifest_from_test_method(m)
