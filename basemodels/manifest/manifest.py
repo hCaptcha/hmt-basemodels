@@ -247,7 +247,7 @@ class Manifest(Model):
     requester_description: Optional[str] = None
     requester_max_repeats: int = 100
     requester_min_repeats: int = 1
-    requester_question: Optional[Dict[str, str]] = None
+    requester_question: Dict[str, str]
 
     requester_question_example: Optional[Union[HttpUrl, List[HttpUrl]]] = None
     requester_example_extra_fields: Optional[Union[Dict[str, str], List[Union[Dict[str, str]]]]] = None

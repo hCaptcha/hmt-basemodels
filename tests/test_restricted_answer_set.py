@@ -47,7 +47,12 @@ class TestILMCRequesterRestrictedAnswerSet(unittest.TestCase):
     """
 
     def check_rsa_validation(self, rsa: dict, should_pass: bool, nested_manifest: bool = False):
-        data = {"requester_restricted_answer_set": rsa}
+        data = {
+            "requester_question": {
+                "en": "Requester question",
+            },
+            "requester_restricted_answer_set": rsa,
+        }
         m = create_manifest_from_test_method(nested_manifest, data)
         if should_pass:
             validate_manifest_from_test_method(m)

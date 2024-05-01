@@ -4,4 +4,4 @@ set -exu
 cd $(dirname $0)/..
 
 # captures all of the files in the tests dir
-python3 -m unittest discover tests
+python3 -m pytest tests
