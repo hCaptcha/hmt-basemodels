@@ -475,7 +475,43 @@ def validate_manifest_example_images(manifest: dict):
         validate_requester_restricted_answer_set_uris(req_res_answer_set)
 
 
+def fetch_data_from_uri(data_uri: str):
+    """Fetch data from a given uri."""
+    try:
+        response = requests.get(data_uri, timeout=(3.5, 5))
+        response.raise_for_status()
+        return response.json()
+    except RequestException as e:
+        raise ValidationError(f"Failed to fetch data from {data_uri}: {e}", Manifest())
+
+
 def validate_manifest_uris(manifest: dict):
     """Fetch & validate manifest's remote objects"""
     validate_taskdata_uri(manifest)
     validate_groundtruth_uri(manifest)
+
+
+def validate_security_jobs(manifest: dict):
+    """Check for security jobs."""
+
+    request_type = manifest.get("request_type")
+    if request_type == BaseJobTypesEnum.image_drag_drop:
+        task_key = "task_key"
+    else:
+        task_key = "datapoint_uri"
+
+    taskdata_uri = manifest.get("taskdata_uri")
+    gt_uri = manifest.get("groundtruth_uri")
+    if not gt_uri or not taskdata_uri:
+        raise ValidationError(f"Manifest is missing either of groundtruth or taskdata", Manifest())
+    taskdata = fetch_data_from_uri(taskdata_uri)
+    groundtruth = fetch_data_from_uri(gt_uri)
+
+    if len(taskdata) != len(groundtruth.keys()):
+        raise ValidationError(f"Taskdata and Groundtruth dont have the same amount of entries", Manifest())
+
+    task_key_list = [task.get(task_key) for task in taskdata].sort()
+    gt_keys = list(groundtruth.keys()).sort()
+    if gt_keys != task_key_list:
+        raise ValidationError(f"All taskdata entries dont have corresponding groundtruth entry", Manifest())
+
