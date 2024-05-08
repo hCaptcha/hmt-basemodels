@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 
 import requests
+from pydantic_core import InitErrorDetails
 from pydantic_core.core_schema import ValidationInfo
 from requests.exceptions import RequestException
 from typing_extensions import Literal
@@ -15,9 +16,9 @@ from .data.requester_restricted_answer_set import validate_requester_restricted_
 from .data.taskdata import validate_taskdata_entry, Entity
 from pydantic import BaseModel, field_validator, ValidationError, HttpUrl, AnyHttpUrl, model_validator, ConfigDict
 from pydantic.fields import Field
-from decimal import Decimal
 from basemodels.manifest.restricted_audience import RestrictedAudience
 from basemodels.constants import JOB_TYPES_FOR_CONTENT_TYPE_VALIDATION, BaseJobTypesEnum
+from basemodels.helpers import raise_validation_error
 
 
 # A validator function for UUID fields
@@ -411,11 +412,10 @@ def validate_groundtruth_uri(manifest: dict):
     uri = manifest.get(uri_key)
     if uri is None:
         return
+    entries_count = 0
     try:
         response = requests.get(uri, timeout=(3.5, 5))
         response.raise_for_status()
-
-        entries_count = 0
         data = response.json()
         if isinstance(data, dict):
             for k, v in data.items():
@@ -428,11 +428,25 @@ def validate_groundtruth_uri(manifest: dict):
                 validate_groundtruth_entry("", v, request_type, validate_image_content_type)
                 validate_image_content_type = False
 
-    except (ValidationError, RequestException) as e:
-        raise ValidationError(f"Validation failed for {uri}: {e}", TaskData()) from e
+    except ValidationError as e:
+        raise_validation_error(
+            location=("groundtruth_uri",),
+            error_message=f"Validation failed for {uri}: {e.title}",
+            input_data={"groundtruth_uri": uri}
+        )
+    except RequestException as e:
+        raise_validation_error(
+            location=("groundtruth_uri",),
+            error_message=f"Validation failed for {uri}: {e}",
+            input_data={"groundtruth_uri": uri}
+        )
 
     if entries_count == 0:
-        raise ValidationError(f"fetched {uri} is empty", TaskData())
+        raise_validation_error(
+            location=("groundtruth_uri",),
+            error_message=f"fetched {uri} is empty"f"fetched {uri} is empty",
+            input_data={"groundtruth_uri": uri}
+        )
 
 
 def validate_taskdata_uri(manifest: dict):
@@ -446,22 +460,35 @@ def validate_taskdata_uri(manifest: dict):
     uri = manifest.get(uri_key)
     if uri is None:
         return
+    entries_count = 0
     try:
         response = requests.get(uri, timeout=(3.5, 5))
         response.raise_for_status()
-
-        entries_count = 0
         data = response.json()
         for v in data:
             entries_count += 1
             validate_taskdata_entry(v, validate_image_content_type)
             validate_image_content_type = False  # We want to validate only first entry for content type
 
-    except (ValidationError, RequestException) as e:
-        raise ValidationError(f"Validation failed for {uri}: {e}", TaskData())
+    except ValidationError as e:
+        raise_validation_error(
+            location=("taskdata_uri",),
+            error_message=f"Validation failed for {uri}: {e.title}",
+            input_data={"taskdata_uri": uri}
+        )
+    except RequestException as e:
+        raise_validation_error(
+            location=("taskdata_uri",),
+            error_message=f"Validation failed for {uri}: {e}",
+            input_data={"taskdata_uri": uri}
+        )
 
     if entries_count == 0:
-        raise ValidationError(f"fetched {uri} is empty"f"fetched {uri} is empty", TaskData())
+        raise_validation_error(
+            location=("taskdata_uri",),
+            error_message=f"fetched {uri} is empty"f"fetched {uri} is empty",
+            input_data={"taskdata_uri": uri}
+        )
 
 
 def validate_manifest_example_images(manifest: dict):
@@ -482,7 +509,10 @@ def fetch_data_from_uri(data_uri: str):
         response.raise_for_status()
         return response.json()
     except RequestException as e:
-        raise ValidationError(f"Failed to fetch data from {data_uri}: {e}", Manifest())
+        raise_validation_error(
+            location=("taskdata_uri", "groundtruth_uri",),
+            error_message=f"Failed to fetch data from {data_uri}: {e}"
+        )
 
 
 def validate_manifest_uris(manifest: dict):
@@ -502,16 +532,32 @@ def validate_security_jobs(manifest: dict):
 
     taskdata_uri = manifest.get("taskdata_uri")
     gt_uri = manifest.get("groundtruth_uri")
+
     if not gt_uri or not taskdata_uri:
-        raise ValidationError(f"Manifest is missing either of groundtruth or taskdata", Manifest())
+        raise_validation_error(
+            location=("taskdata_uri", "groundtruth_uri",),
+            error_message="Manifest is missing either of groundtruth or taskdata"
+        )
+
     taskdata = fetch_data_from_uri(taskdata_uri)
     groundtruth = fetch_data_from_uri(gt_uri)
 
     if len(taskdata) != len(groundtruth.keys()):
-        raise ValidationError(f"Taskdata and Groundtruth dont have the same amount of entries", Manifest())
+        raise_validation_error(
+            location=("taskdata_uri", "groundtruth_uri",),
+            error_message="Taskdata and Groundtruth dont have the same amount of entries",
+            input_data={"taskdata_uri": taskdata_uri, "groundtruth_uri": gt_uri}
+        )
 
-    task_key_list = [task.get(task_key) for task in taskdata].sort()
-    gt_keys = list(groundtruth.keys()).sort()
+    task_key_list = [task.get(task_key) for task in taskdata]
+    gt_keys = list(groundtruth.keys())
+
+    task_key_list.sort()
+    gt_keys.sort()
+
     if gt_keys != task_key_list:
-        raise ValidationError(f"All taskdata entries dont have corresponding groundtruth entry", Manifest())
-
+        raise_validation_error(
+            location=("taskdata_uri", "groundtruth_uri",),
+            error_message="All taskdata entries dont have corresponding groundtruth entry",
+            input_data={"taskdata_uri": taskdata_uri, "groundtruth_uri": gt_uri}
+        )

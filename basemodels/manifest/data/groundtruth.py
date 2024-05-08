@@ -2,11 +2,12 @@ from typing import List, Optional, Union
 from uuid import UUID
 
 import requests
-from pydantic import BaseModel, HttpUrl, ValidationError, ConfigDict
+from pydantic import BaseModel, HttpUrl, ConfigDict
 from requests import RequestException
 from typing_extensions import Literal
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES, BaseJobTypesEnum
+from basemodels.helpers import raise_validation_error
 
 
 def create_wrapper_model(type):
@@ -142,13 +143,18 @@ def validate_content_type(uri: str) -> None:
         response = requests.head(uri, timeout=(3.5, 5))
         response.raise_for_status()
     except RequestException as e:
-        raise ValidationError(f"groundtruth content type ({uri}) validation failed", GroundtruthEntryKeyModel()) from e
+        raise_validation_error(
+            location=("groundtruth_uri",),
+            error_message=f"groundtruth content type ({uri}) validation failed",
+            input_data={"groundtruth_uri": uri}
+        )
 
     content_type = response.headers.get("Content-Type", "")
     if content_type not in SUPPORTED_CONTENT_TYPES:
-        raise ValidationError(
-            f"groundtruth entry has unsupported type {content_type}",
-            GroundtruthEntryKeyModel(),
+        raise_validation_error(
+            location=("groundtruth_uri",),
+            error_message=f"groundtruth entry has unsupported type {content_type}",
+            input_data={"groundtruth_uri": uri}
         )
 
 

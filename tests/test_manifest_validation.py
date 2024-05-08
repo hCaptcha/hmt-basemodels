@@ -897,7 +897,8 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(ValidationError):
             test_models.validate_manifest_uris(manifest)
 
-    def test_groundtruth_and_taskdata_valid(self):
+    def mock_manifest_uris(self, security_job: bool = False, gt_td_same_length: bool = False):
+        """Mocking manifest uris."""
         taskdata_uri = "https://td.com"
         groundtruth_uri = "https://gt.com"
         manifest = {
@@ -905,32 +906,46 @@ class TestValidateManifestUris(unittest.TestCase):
             "groundtruth_uri": groundtruth_uri,
             "request_type": "image_label_binary",
         }
-        datapoint_uri = "https://domain.com/file1.jpg"
+        if security_job:
+            image_uri_1 = gt_uri_1 = "https://domain.com/123/file1.jpeg"
+            image_uri_2 = gt_uri_2 = "https://domain.com/456/file2.jpeg"
+        else:
+            image_uri_1 = "https://domain.com/123/file1.jpeg"
+            gt_uri_1 = "https://domain.com/file1.jpeg"
+            image_uri_2 = "https://domain.com/456/file2.jpeg"
+            gt_uri_2 = "https://domain.com/file2.jpeg"
+
         taskdata = [
             {
                 "task_key": "407fdd93-687a-46bb-b578-89eb96b4109d",
-                "datapoint_uri": datapoint_uri,
+                "datapoint_uri": image_uri_1,
                 "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
             },
             {
                 "task_key": "20bd4f3e-4518-4602-b67a-1d8dfabcce0c",
-                "datapoint_uri": "https://domain.com/file2.jpg",
+                "datapoint_uri": image_uri_2,
                 "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
             },
         ]
-        groundtruth_image_uri = "https://domain.com/123/file1.jpeg"
         groundtruth = {
-            groundtruth_image_uri: ["false", "false", "false"],
-            "https://domain.com/456/file2.jpeg": ["false", "true", "false"],
+            gt_uri_1: ["false", "false", "false"],
         }
+        if gt_td_same_length:
+            groundtruth[gt_uri_2] = ["false", "true", "false"]
 
-        self.register_http_response(datapoint_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
         self.register_http_response(
-            groundtruth_image_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"}
+            image_uri_1, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"}
+        )
+        self.register_http_response(
+            gt_uri_1, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"}
         )
         self.register_http_response(taskdata_uri, manifest, taskdata)
         self.register_http_response(groundtruth_uri, manifest, groundtruth)
 
+        return manifest
+
+    def test_groundtruth_and_taskdata_valid(self):
+        manifest = self.mock_manifest_uris(gt_td_same_length=True)
         test_models.validate_manifest_uris(manifest)
 
     def test_mitl_in_internal_config(self):
@@ -994,6 +1009,17 @@ class TestValidateManifestUris(unittest.TestCase):
         self.register_http_response(third_uri, method=httpretty.HEAD, headers={"Content-Type": "image/jpeg"})
         with self.assertRaises(ValidationError):
             test_models.validate_manifest_example_images(manifest)
+
+    def test_validation_of_valid_security_job(self):
+        """Test validation for valid security job."""
+        manifest = self.mock_manifest_uris(security_job=True, gt_td_same_length=True)
+        test_models.validate_security_jobs(manifest)
+
+    def test_validation_of_invalid_security_job(self):
+        """Test validation of invalid security jobs."""
+        manifest = self.mock_manifest_uris()
+        with self.assertRaises(ValidationError):
+            test_models.validate_security_jobs(manifest)
 
 
 class TaskEntryTest(unittest.TestCase):
