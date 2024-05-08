@@ -1017,9 +1017,19 @@ class TestValidateManifestUris(unittest.TestCase):
 
     def test_validation_of_invalid_security_job(self):
         """Test validation of invalid security jobs."""
-        manifest = self.mock_manifest_uris()
-        with self.assertRaises(ValidationError):
+        # check when it is a security job but the gt and td not same length
+        manifest = self.mock_manifest_uris(security_job=True)
+        with self.assertRaises(ValidationError) as val_error:
             test_models.validate_security_jobs(manifest)
+
+        self.assertEqual("Taskdata and Groundtruth dont have the same amount of entries", val_error.exception.title)
+
+        # check when it is not a security job but the gt and TD same length
+        manifest = self.mock_manifest_uris(gt_td_same_length=True)
+        with self.assertRaises(ValidationError) as val_error:
+            test_models.validate_security_jobs(manifest)
+
+        self.assertEqual("All taskdata entries dont have corresponding groundtruth entry", val_error.exception.title)
 
 
 class TaskEntryTest(unittest.TestCase):
