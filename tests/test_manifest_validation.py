@@ -926,6 +926,12 @@ class TestValidateManifestUris(unittest.TestCase):
                 "datapoint_uri": image_uri_2,
                 "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
             },
+            # task with duplicated datapoint_uri
+            {
+                "task_key": "30bd4f3e-4518-4602-b67a-1d8dfabcce0a",
+                "datapoint_uri": image_uri_2,
+                "datapoint_hash": "f4acbe8562907183a484498ba901bfe5c5503aaa",
+            },
         ]
         groundtruth = {
             gt_uri_1: ["false", "false", "false"],
@@ -1022,7 +1028,7 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(ValidationError) as val_error:
             test_models.validate_is_verification(manifest)
 
-        self.assertEqual("Taskdata and Groundtruth dont have the same amount of entries", val_error.exception.title)
+        self.assertEqual("All taskdata entries dont have corresponding groundtruth entry", val_error.exception.title)
 
         # check when it is not verification but with the gt and TD same length
         manifest = self.mock_manifest_uris(gt_td_same_length=True)

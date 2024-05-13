@@ -542,20 +542,17 @@ def validate_is_verification(manifest: dict):
     taskdata = fetch_data_from_uri(taskdata_uri)
     groundtruth = fetch_data_from_uri(gt_uri)
 
-    if len(taskdata) != len(groundtruth.keys()):
-        raise_validation_error(
-            location=("taskdata_uri", "groundtruth_uri",),
-            error_message="Taskdata and Groundtruth dont have the same amount of entries",
-            input_data={"taskdata_uri": taskdata_uri, "groundtruth_uri": gt_uri}
-        )
-
     task_key_list = [task.get(task_key) for task in taskdata]
     gt_keys = list(groundtruth.keys())
 
     task_key_list.sort()
     gt_keys.sort()
 
-    if gt_keys != task_key_list:
+    # remove duplicates
+    task_key_list = set(task_key_list)
+    gt_keys = set(gt_keys)
+
+    if set(gt_keys) != set(task_key_list):
         raise_validation_error(
             location=("taskdata_uri", "groundtruth_uri",),
             error_message="All taskdata entries dont have corresponding groundtruth entry",
