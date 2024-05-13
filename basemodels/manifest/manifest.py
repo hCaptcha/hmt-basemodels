@@ -545,9 +545,6 @@ def validate_is_verification(manifest: dict):
     task_key_list = [task.get(task_key) for task in taskdata]
     gt_keys = list(groundtruth.keys())
 
-    task_key_list.sort()
-    gt_keys.sort()
-
     # remove duplicates
     task_key_list = set(task_key_list)
     gt_keys = set(gt_keys)
