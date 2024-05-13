@@ -521,8 +521,8 @@ def validate_manifest_uris(manifest: dict):
     validate_groundtruth_uri(manifest)
 
 
-def validate_security_jobs(manifest: dict):
-    """Check for security jobs."""
+def validate_is_verification(manifest: dict):
+    """Check for verification jobs."""
 
     request_type = manifest.get("request_type")
     if request_type == BaseJobTypesEnum.image_drag_drop:

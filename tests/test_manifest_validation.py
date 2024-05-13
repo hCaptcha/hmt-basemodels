@@ -897,7 +897,7 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(ValidationError):
             test_models.validate_manifest_uris(manifest)
 
-    def mock_manifest_uris(self, security_job: bool = False, gt_td_same_length: bool = False):
+    def mock_manifest_uris(self, verification: bool = False, gt_td_same_length: bool = False):
         """Mocking manifest uris."""
         taskdata_uri = "https://td.com"
         groundtruth_uri = "https://gt.com"
@@ -906,7 +906,7 @@ class TestValidateManifestUris(unittest.TestCase):
             "groundtruth_uri": groundtruth_uri,
             "request_type": "image_label_binary",
         }
-        if security_job:
+        if verification:
             image_uri_1 = gt_uri_1 = "https://domain.com/123/file1.jpeg"
             image_uri_2 = gt_uri_2 = "https://domain.com/456/file2.jpeg"
         else:
@@ -1010,24 +1010,24 @@ class TestValidateManifestUris(unittest.TestCase):
         with self.assertRaises(ValidationError):
             test_models.validate_manifest_example_images(manifest)
 
-    def test_validation_of_valid_security_job(self):
-        """Test validation for valid security job."""
-        manifest = self.mock_manifest_uris(security_job=True, gt_td_same_length=True)
-        test_models.validate_security_jobs(manifest)
+    def test_valid_is_verification(self):
+        """Test valid is verification."""
+        manifest = self.mock_manifest_uris(verification=True, gt_td_same_length=True)
+        test_models.validate_is_verification(manifest)
 
-    def test_validation_of_invalid_security_job(self):
-        """Test validation of invalid security jobs."""
-        # check when it is a security job but the gt and td not same length
-        manifest = self.mock_manifest_uris(security_job=True)
+    def test_invalid_is_verification(self):
+        """Test validation of invalid is verification."""
+        # check when it is not verification but with gt and td not same length
+        manifest = self.mock_manifest_uris(verification=True)
         with self.assertRaises(ValidationError) as val_error:
-            test_models.validate_security_jobs(manifest)
+            test_models.validate_is_verification(manifest)
 
         self.assertEqual("Taskdata and Groundtruth dont have the same amount of entries", val_error.exception.title)
 
-        # check when it is not a security job but the gt and TD same length
+        # check when it is not verification but with the gt and TD same length
         manifest = self.mock_manifest_uris(gt_td_same_length=True)
         with self.assertRaises(ValidationError) as val_error:
-            test_models.validate_security_jobs(manifest)
+            test_models.validate_is_verification(manifest)
 
         self.assertEqual("All taskdata entries dont have corresponding groundtruth entry", val_error.exception.title)
 

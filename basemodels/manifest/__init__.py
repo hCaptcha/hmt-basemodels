@@ -6,5 +6,5 @@ from .manifest import (
     Webhook,
     validate_manifest_uris,
     validate_manifest_example_images,
-    validate_security_jobs,
+    validate_is_verification,
 )
