@@ -1,6 +1,7 @@
 from requests import RequestException
-from pydantic.v1 import ValidationError
-from .helpers import validate_content_type, ExampleResourceModel
+from pydantic import ValidationError
+from .helpers import validate_content_type
+from basemodels.helpers import raise_validation_error
 
 
 def extract_answer_uri(restricted_answer_set: dict) -> list:
@@ -22,12 +23,12 @@ def validate_requester_restricted_answer_set_uris(restricted_answer_set: dict) -
         try:
             validate_content_type(uri)
         except RequestException as e:
-            raise ValidationError(
-                f"could not retrieve requester restricted answer set example uri ({uri})",
-                ExampleResourceModel()
-            ) from e
+            raise_validation_error(
+                location=("requester_restricted_answer_set",),
+                error_message=f"could not retrieve requester restricted answer set example uri ({uri})",
+            )
         except ValidationError as e:
-            raise ValidationError(
-                f"requester restricted answer set example uri({uri}) content type failed validation",
-                ExampleResourceModel()
-            ) from e
+            raise_validation_error(
+                location=("requester_restricted_answer_set",),
+                error_message=f"requester restricted answer set uri({uri}) content type failed validation: {e.title}",
+            )

@@ -2,11 +2,11 @@ from typing import Dict, Optional, Union, Any, List, Tuple
 from uuid import UUID
 
 import requests
-from pydantic import BaseModel, AnyHttpUrl, HttpUrl, ValidationError, field_validator, model_validator
-from pydantic_core.core_schema import ValidationInfo
+from pydantic import BaseModel, AnyHttpUrl, HttpUrl, field_validator, model_validator
 from requests import RequestException
 
 from basemodels.constants import SUPPORTED_CONTENT_TYPES
+from basemodels.helpers import raise_validation_error
 
 
 class Entity(BaseModel):
@@ -84,18 +84,26 @@ def validate_content_type(uri: str) -> None:
         response = requests.head(uri, timeout=(3.5, 5))
         response.raise_for_status()
     except RequestException as e:
-        raise ValidationError(f"taskdata content type ({uri}) validation failed", TaskDataEntry()) from e
+        raise_validation_error(
+            location=("taskdata_uri",),
+            error_message=f"taskdata content type ({uri}) validation failed",
+        )
 
     content_type = response.headers.get("Content-Type", "")
     if content_type not in SUPPORTED_CONTENT_TYPES:
-        raise ValidationError(f"taskdata entry datapoint_uri has unsupported type {content_type}", TaskDataEntry())
+        raise_validation_error(
+            location=("taskdata_uri",),
+            error_message=f"taskdata entry datapoint_uri has unsupported type {content_type}",
+        )
 
 
 def validate_taskdata_entry(value: dict, validate_image_content_type: bool) -> None:
     """Validate taskdata entry"""
     if not isinstance(value, dict):
-        raise ValidationError("taskdata entry should be dict", TaskDataEntry())
-
+        raise_validation_error(
+            location=("taskdata_uri",),
+            error_message=f"taskdata entry should be dict",
+        )
     task_data = TaskDataEntry(**value)
 
     if validate_image_content_type:
