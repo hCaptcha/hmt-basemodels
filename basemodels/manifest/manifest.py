@@ -545,7 +545,6 @@ def validate_is_verification(manifest: dict):
     task_key_set = {task.get(task_key) for task in taskdata}
     gt_keys = set(groundtruth.keys())
 
-    # remove duplicates
     if gt_keys != task_key_set:
         raise_validation_error(
             location=("taskdata_uri", "groundtruth_uri",),
