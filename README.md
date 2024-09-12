@@ -12,17 +12,17 @@ In order to get going you need [Docker](https://www.docker.com/) installed on yo
 First build the image that contains all the code and dependencies:
 
 ```
-docker-compose build
+docker compose build
 ```
 
 Run the tests:
 ```
-docker-compose run basemodels ./bin/test
+docker compose run basemodels ./bin/test
 ```
 
 Lint the python files:
 ```
-docker-compose run basemodels ./bin/lint
+docker compose run basemodels ./bin/lint
 ```
 
 ### Manual
