@@ -65,8 +65,6 @@ manifest = basemodels.Manifest.model_construct(**model)
 ```
 ## Note for maintainers: Deploying to PyPi
 
-A build will automatically be deployed to PyPi from master if tagged with a version number.  This version number should  match the version in the `setup.py` file.
-
 The tags will need to be pushed to master via a user that has the proper privileges (see the contributors of this repo).
 
 Versioning should follow the [semver](https://semver.org/) versioning methodology and not introduce breaking changes on minor or patch-level changes.
