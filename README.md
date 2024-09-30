@@ -12,17 +12,17 @@ In order to get going you need [Docker](https://www.docker.com/) installed on yo
 First build the image that contains all the code and dependencies:
 
 ```
-docker-compose build
+docker compose build
 ```
 
 Run the tests:
 ```
-docker-compose run basemodels ./bin/test
+docker compose run basemodels ./bin/test
 ```
 
 Lint the python files:
 ```
-docker-compose run basemodels ./bin/lint
+docker compose run basemodels ./bin/lint
 ```
 
 ### Manual
@@ -64,8 +64,6 @@ manifest = basemodels.Manifest.model_construct(**model)
 # See https://pydantic-docs.helpmanual.io/usage/models/#creating-models-without-validation
 ```
 ## Note for maintainers: Deploying to PyPi
-
-A build will automatically be deployed to PyPi from master if tagged with a version number.  This version number should  match the version in the `setup.py` file.
 
 The tags will need to be pushed to master via a user that has the proper privileges (see the contributors of this repo).
 

@@ -15,6 +15,7 @@ class Entity(BaseModel):
     entity_id: UUID
     entity_uri: AnyHttpUrl
     coords: Tuple[int, int]
+    size: Tuple[int, int]
 
 
 class TaskDataEntry(BaseModel):

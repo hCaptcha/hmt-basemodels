@@ -297,6 +297,8 @@ class Manifest(Model):
     rejected_uri: Optional[AnyHttpUrl] = None
     rejected_count: Optional[int] = None
 
+    enable_skip_text: Optional[bool] = False
+
     is_verification: bool = False
 
     # #### Validators
