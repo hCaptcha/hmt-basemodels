@@ -9,7 +9,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-requests = "^2.31.0"
+requests = "^2.32.2"
 pydantic = "^2.5.3"
 
 [tool.poetry.dev-dependencies]
