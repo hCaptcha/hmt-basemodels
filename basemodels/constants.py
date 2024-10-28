@@ -17,6 +17,7 @@ SUPPORTED_CONTENT_TYPES = [
     "image/jpeg",
     "image/jpg",
     "image/png",
+    "image/gif",
 ]
 
 
