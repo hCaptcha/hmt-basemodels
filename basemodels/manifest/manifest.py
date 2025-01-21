@@ -300,6 +300,7 @@ class Manifest(Model):
     enable_skip_text: Optional[bool] = False
 
     is_verification: bool = False
+    is_testing: bool = False
 
     # #### Validators
 
@@ -310,6 +311,9 @@ class Manifest(Model):
         # validate at least taskdata or taskdata_uri is present
         taskdata = values.get("taskdata")
         taskdata_uri = values.get("taskdata_uri")
+
+        if not values.get("is_verification") and values.get("is_testing"):
+            raise ValueError("is_verification must be True when is_testing is True")
         if taskdata is not None and len(taskdata) > 0 and taskdata_uri is not None:
             raise ValueError("Specify only one of taskdata {} or taskdata_uri {}".format(taskdata, taskdata_uri))
         if taskdata is None and taskdata_uri is None:
