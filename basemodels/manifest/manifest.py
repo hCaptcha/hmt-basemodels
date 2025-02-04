@@ -3,7 +3,6 @@ import uuid
 from datetime import datetime
 
 import requests
-from pydantic_core import InitErrorDetails
 from pydantic_core.core_schema import ValidationInfo
 from requests.exceptions import RequestException
 from typing_extensions import Literal
@@ -130,6 +129,7 @@ class RequestConfig(Model):
     keep_answers_order: Optional[bool] = None
     ignore_case: Optional[bool] = False
     enable_hold_time: Optional[bool] = False
+    new_translation: Optional[bool] = False
 
 
 class InternalConfig(Model):
