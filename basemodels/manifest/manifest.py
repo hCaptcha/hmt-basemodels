@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from pydantic_core.core_schema import ValidationInfo
@@ -318,6 +318,16 @@ class Manifest(Model):
             raise ValueError("Specify only one of taskdata {} or taskdata_uri {}".format(taskdata, taskdata_uri))
         if taskdata is None and taskdata_uri is None:
             raise ValueError("No taskdata or taskdata_uri found in manifest")
+
+        if values.get("is_testing"):
+            if not values.get("start_date") or not values.get("expiration_date"):
+                raise ValueError("start_date and expiration_date are required when is_testing is True")
+            duration = (
+                    datetime.fromtimestamp(expiration_date, timezone.utc)
+                    - datetime.fromtimestamp(start_date, timezone.utc)
+            )
+            if duration.days > 1:
+                raise ValueError("Max testing duration is 1 day")
 
         if not start_date and not expiration_date:
             # Timestamps are not passed

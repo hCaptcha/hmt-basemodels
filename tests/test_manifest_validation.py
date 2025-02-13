@@ -580,6 +580,24 @@ class ManifestTest(unittest.TestCase):
         data["expiration_date"] = datetime(2023, 10, 27).timestamp()
         basemodels.Manifest(**data)
 
+    def test_timestamps_duration_test_j(self):
+        """Validates max duration"""
+        # Given
+        data = get_data()
+        data["is_verification"] = True
+        data["is_testing"] = True
+        data["start_date"] = datetime(2023, 10, 20).timestamp()
+        data["expiration_date"] = datetime(2023, 10, 22).timestamp()
+
+        # When/Then
+        with self.assertRaises(ValueError):
+            basemodels.Manifest(**data)
+
+        # When/Then
+        data["start_date"] = datetime(2023, 10, 20).timestamp()
+        data["expiration_date"] = datetime(2023, 10, 21).timestamp()
+        basemodels.Manifest(**data)
+
     def test_webhook(self):
         """Test that webhook is correct"""
         webhook = {
