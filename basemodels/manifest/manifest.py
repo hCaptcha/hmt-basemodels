@@ -130,6 +130,7 @@ class RequestConfig(Model):
     ignore_case: Optional[bool] = False
     enable_hold_time: Optional[bool] = False
     new_translation: Optional[bool] = False
+    translation_mode: Optional[str] = None
 
 
 class InternalConfig(Model):
