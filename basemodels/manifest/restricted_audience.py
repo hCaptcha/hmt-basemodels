@@ -34,6 +34,8 @@ class RestrictedAudience(BaseModel):
     confidence: Optional[List[Dict[RestrictedAudienceConfidenceEnum, RestrictedAudienceScore]]] = None
     reason: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
     roles: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
+    browser_name: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
+    device_os: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
 
     min_difficulty: Optional[conint(ge=0, le=4, strict=True)] = None
     min_user_score: Optional[confloat(ge=0, le=1)] = None
@@ -59,13 +61,13 @@ class RestrictedAudience(BaseModel):
         for entry, value in values.items():
             if value is None:
                 continue
-            if entry in ["lang", "country", "browser", "sitekey", "serverdomain", "confidence"]:
+            if entry in ["lang", "country", "browser", "sitekey", "serverdomain", "confidence", "browser_name", "device_os"]:
                 if isinstance(value, list):
                     for restriction in value:
                         if len(restriction) > 1:
                             raise ValueError("only 1 element per list item is allowed")
                         key = next(iter(restriction))
-                        if entry in ["lang", "country", "sitekey"]:
+                        if entry in ["lang", "country", "sitekey", "browser_name", "device_os"]:
                             if str(key) != str(key).lower():
                                 raise ValueError("use lowercase")
         return values
