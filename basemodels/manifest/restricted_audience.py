@@ -25,6 +25,11 @@ class RestrictedAudienceScore(BaseModel):
     score: confloat(ge=0, le=1)
 
 
+class RestrictedPlatform(BaseModel):
+    browser_name: Optional[str] = None
+    device_os: Optional[str] = None
+
+
 class RestrictedAudience(BaseModel):
     lang: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
     country: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
@@ -34,8 +39,7 @@ class RestrictedAudience(BaseModel):
     confidence: Optional[List[Dict[RestrictedAudienceConfidenceEnum, RestrictedAudienceScore]]] = None
     reason: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
     roles: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
-    browser_name: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
-    device_os: Optional[List[Dict[str, RestrictedAudienceScore]]] = None
+    platforms: Optional[List[RestrictedPlatform]] = None
 
     min_difficulty: Optional[conint(ge=0, le=4, strict=True)] = None
     min_user_score: Optional[confloat(ge=0, le=1)] = None

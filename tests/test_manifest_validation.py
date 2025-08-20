@@ -428,18 +428,9 @@ class ManifestTest(unittest.TestCase):
             assert_raises(data)
 
         for data in [
-            {"browser_name": "moz"},
-            {"browser_name": [{"moz": 1}]},
-            {"browser_name": [{"moz": {"nonsense": 1}}]},
-            {"browser_name": [{"moz": {"score": -0.1}}]},
-        ]:
-            assert_raises(data)
-
-        for data in [
-            {"device_os": "android"},
-            {"device_os": [{"android": 1}]},
-            {"device_os": [{"android": {"nonsense": 1}}]},
-            {"device_os": [{"android": {"score": -0.1}}]},
+            {"platforms": "android"},
+            {"platforms": [{"browser_name": 1}]},
+            {"platforms": [{"browser_name": "mozilla", "device_os": 1}]},
         ]:
             assert_raises(data)
 
@@ -452,8 +443,7 @@ class ManifestTest(unittest.TestCase):
                 {"mobile": {"score": 1}},
                 {"modern_browser": {"score": 0.9}},
             ],
-            "browser_name": [{"mozilla": {"score": 0}}],
-            "device_os" : [{"android": {"score": 1}}],
+            "platforms": [{"browser_name": "mozilla", "device_os": "android"}],
             "sitekey": [{str(uuid4()): {"score": 0.5}}, {str(uuid4()): {"score": 0}}, {str(uuid4()): {"score": 1}}],
             "serverdomain": [
                 {"1hcaptcha.com": {"score": 0.5}},
