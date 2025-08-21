@@ -427,6 +427,13 @@ class ManifestTest(unittest.TestCase):
         for data in [{"interests": 1}, {"interests": {"mapped": 1}}, {"interests": ["as", "string"]}]:
             assert_raises(data)
 
+        for data in [
+            {"platforms": "android"},
+            {"platforms": [{"browser_name": 1}]},
+            {"platforms": [{"browser_name": "mozilla", "device_os": 1}]},
+        ]:
+            assert_raises(data)
+
         data = {
             "lang": [{"us": {"score": 0}}, {"es": {"score": 0.5}}, {"en-us": {"score": 1}}],
             "country": [{"us": {"score": 0}}, {"es": {"score": 0.5}}, {"it": {"score": 1}}],
@@ -436,6 +443,7 @@ class ManifestTest(unittest.TestCase):
                 {"mobile": {"score": 1}},
                 {"modern_browser": {"score": 0.9}},
             ],
+            "platforms": [{"browser_name": "mozilla", "device_os": "android"}],
             "sitekey": [{str(uuid4()): {"score": 0.5}}, {str(uuid4()): {"score": 0}}, {str(uuid4()): {"score": 1}}],
             "serverdomain": [
                 {"1hcaptcha.com": {"score": 0.5}},
