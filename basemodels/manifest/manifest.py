@@ -298,7 +298,7 @@ class Manifest(Model):
     webhook: Optional[Webhook] = None
 
     rejected_uri: Optional[AnyHttpUrl] = None
-    rejected_count: Optional[int] = None  # check
+    rejected_count: Optional[int] = None
 
     enable_skip_text: Optional[bool] = False
 
